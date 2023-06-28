@@ -13,7 +13,7 @@ candump_logg=True
 import pprint
 from clBMS import Request, smartBMS
 from dataprocess import dataprocessing
-from UDP import UDP
+
 import time
 from datetime import datetime
 import threading
@@ -50,6 +50,12 @@ TBToken  = config['thingsboard']['Token']
 TBAkku  = config['thingsboard']['Akku']
 TBSN  = config['thingsboard']['Seriennummer']
 APP_MODE=TBSN[:4]
+
+if APP_MODE=="3042":
+    from UDP_p import UDP
+elif (APP_MODE=="3222" or APP_MODE=="3212" or APP_MODE=="3455" ):
+    from UDP_c import UDP
+
 
 #logging.basicConfig(level=logging.DEBUG)
 #logging.basicConfig(level=logging.INFO)           #Testausgabe Werte
