@@ -49,6 +49,7 @@ TBServer  = config['thingsboard']['Server']
 TBToken  = config['thingsboard']['Token']
 TBAkku  = config['thingsboard']['Akku']
 TBSN  = config['thingsboard']['Seriennummer']
+APP_MODE=TBSN[:4]
 
 #logging.basicConfig(level=logging.DEBUG)
 #logging.basicConfig(level=logging.INFO)           #Testausgabe Werte
@@ -224,7 +225,6 @@ if __name__ == '__main__':
                 Data.update({'StatusA': statusA, 'StatusB': statusB, 'WarningA': warningA,  'WarningB': warningB, 'ErrorA':errorA, 'ErrorB':errorB})
                 Data.update(IO_Input)
                 
-                APP_MODE=Data['TBSN'][:4]
                 Data.update({'APP-Mode': APP_MODE})
                 Data.update(ueberwache_system())
                 CPUTemp= ueberwache_system()["CPUTemp"]
