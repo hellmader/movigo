@@ -1,0 +1,418 @@
+#!/usr/bin/python
+
+########################################################################
+# V1.0
+########################################################################
+
+
+import serial
+import time
+import threading
+import enum
+import os
+import logging
+
+class Request(enum.Enum):
+    NONE = 0
+    BASIC_INFO = 1
+    CELL_VOLTAGE = 2
+
+
+def current_milli_time():
+    return round(time.time() * 1000)
+
+class dataprocessing():
+    def __init__(self):#, to_smartBMS, from_CtPN, to_CtPN, from_charger, to_charger, from_IOs, to_IOs):
+        
+        #self.from_smartBMS = from_smartBMS
+        '''
+        self.to_smartBMS = to_smartBMS
+        self.from_CtPN = from_CtPN
+        self.to_CtPN = to_CtPN
+        self.from_charger = from_charger
+        self.to_charger = to_charger
+        self.from_IOs = from_IOs
+        self.to_IOs = to_IOs
+        '''
+        # hier die Daten die lokal gespeichert werden sollen erstmal deklarieren
+        # BMS Variables
+        self.voltage = 0
+        self.current = 0
+        self.SoC = 0
+        self.temp1 = 0
+        self.temp2 = 0
+        self.max_discharge_current = 0
+        self.max_charge_current = 0
+        self.max_cell_voltage = 0
+        self.pos_max_voltage = 0
+        self.min_cell_voltage = 0
+        self.pos_min_voltage = 0
+        self.num_of_cells = 0
+        self.min_temp_charge = 0
+        self.max_temp_charge = 0
+        self.min_temp_discharge = 0
+        self.max_temp_discharge = 0
+        self.isolation_case_plus = 0
+        self.isolation_case_minus = 0
+        self.spez_isolation_case_plus = 0
+        self.spez_isolation_case_minus = 0
+        self.protection_status = 0
+        self.balance_status_low = 0
+        self.parameterBMS = 0
+        
+        #Ladegeräte Variables
+        self.Spannung_Ladegeraet = 0
+        self.Strom_Ladegeraet = 0
+        self.Status_Ladegeraet = 64
+        self.Kommunikation_Ladegeraet = False
+        self.Flag_geladen = False
+        
+        # Status Variables
+        self.status = 0
+        self.Status_1_AUX1 = 1
+        self.Status_2_AUX2 = 0
+        self.Status_3_P_plus = 0
+        self.Status_4_C_plus = 0
+        self.Status_5_Balancing = 0
+        self.Status_6_Ladegerät_present = 0
+        self.Status_7_Ladegerät_aktiv = 0
+        self.Status_8_Ladevorgang_beendet = 0
+        self.Status_9_bereit = 0
+        
+        self.Status_Relais = 1
+        
+        #Warning Variables
+        self.warning = 0
+        self.Warning_1_Zell_min = 0
+        self.Warning_2_Zell_max = 0
+        self.Warning_3_Temp_max = 0
+        self.Warning_4_Temp_min = 0
+        self.Warning_5_Strom_entl = 0
+        self.Warning_6_Strom_laden = 0
+        self.Warning_7_Akku_disbalance = 0
+        self.Warning_8_SoC_min = 0
+        
+        #Error Variables
+        self.error = 0
+        self.Error_1_Zell_min = 0
+        self.Error_2_Zell_max = 0
+        self.Error_3_Temp_max = 0
+        self.Error_4_Temp_min = 0
+        self.Error_5_Strom_entl = 0
+        self.Error_6_Strom_laden = 0
+        self.Error_7_Comm_Timeout = 0
+        self.Error_8_Fehler = 0
+        
+        self.Request_AUX2 = 0
+        self.Request_P = 0
+        self.Request_C = 0
+        self.Request_sleep = 0
+        self.Requests = {'Status_AUX1':1, 'Request_AUX2':0, 'Request_P':0, 'Request_C':0, 'Request_sleep':0}
+        #self.Requests = {'Status_AUX1':self.Status_1_AUX1, 'Request_AUX2':self.Request_AUX2,'Request_P':self.Request_P, 'Request_C':self.Request_C, 'Request_sleep':self.Request_sleep}
+        
+        #Thingsboard
+        self.Akkuname = ""
+        
+        #shutdown
+        self.shutdown = False
+        self.Update_time_sleep = 0
+    
+    def updateBMS(self, qDatafromBMS):
+        #print (qDatafromBMS)
+        self.voltage = qDatafromBMS['Spannung']
+        self.current = qDatafromBMS['Strom']
+        self.SoC = qDatafromBMS['SoC']
+        self.temp1 = qDatafromBMS['Temperatur 1']
+        self.temp2 = qDatafromBMS['Temperatur 2']
+        self.max_discharge_current = qDatafromBMS['maximaler Entladestrom']
+        self.max_charge_current = qDatafromBMS['maximaler Ladestrom']
+        self.max_cell_voltage = qDatafromBMS['maximale Zellspannung']
+        self.pos_max_voltage = qDatafromBMS['Position maximale Zellspannung']
+        self.min_cell_voltage = qDatafromBMS['minimale Zellspannung']
+        self.pos_min_voltage = qDatafromBMS['Position minimale Zellspannung']
+        self.num_of_cells = qDatafromBMS['Anzahl der Seriell-Verbindungen']
+        self.min_temp_charge = qDatafromBMS['Minimale Temperatur Laden']
+        self.max_temp_charge = qDatafromBMS['Maximale Temperatur Laden']
+        self.min_temp_discharge = qDatafromBMS['Minimale Temperatur Entladen']
+        self.max_temp_discharge = qDatafromBMS['Maximale Temperatur Entladen']
+        self.isolation_case_plus = qDatafromBMS['Isolationswiderstand kOhm Gehäuse gegen PLUS']
+        self.isolation_case_minus = qDatafromBMS['Isolationswiderstand kOhm Gehäuse gegen MINUS']
+        self.spez_isolation_case_plus = qDatafromBMS['spezifischer Isolationswiderstand Ohm/V Gehäuse gegen PLUS']
+        self.spez_isolation_case_minus = qDatafromBMS['spezifischer Isolationswiderstand Ohm/V Gehäuse gegen MINUS']
+        self.parameterBMS ={'Spannung': self.voltage, 'Strom': self.current, 'SoC': self.SoC, 'Temperatur 1': self.temp1, 'Temperatur 2': self.temp2, 'maximaler Entladestrom': self.max_discharge_current, 'maximaler Ladestrom': self.max_charge_current, 'maximale Zellspannung': self.max_cell_voltage, 'Position maximale Zellspannung': self.pos_max_voltage, 'minimale Zellspannung': self.min_cell_voltage, 'Position minimale Zellspannung': self.pos_min_voltage, 'Anzahl der Seriell-Verbindungen': self.num_of_cells, 'Minimale Temperatur Laden': self.min_temp_charge, 'Maximale Temperatur Laden': self.max_temp_charge, 'Minimale Temperatur Entladen': self.min_temp_discharge, 'Maximale Temperatur Entladen': self.max_temp_discharge, 'Isolationswiderstand kOhm Gehäuse gegen PLUS': self.isolation_case_plus, 'Isolationswiderstand kOhm Gehäuse gegen MINUS': self.isolation_case_minus, 'spezifischer Isolationswiderstand Ohm/V Gehäuse gegen PLUS': self.spez_isolation_case_plus, 'spezifischer Isolationswiderstand Ohm/V Gehäuse gegen MINUS': self.spez_isolation_case_minus}
+        
+        self.protection_status = qDatafromBMS['Protection Status']
+        self.balance_status_low = qDatafromBMS['Balance Status']
+        logging.info ('BMS Update abgeschlossen')
+
+    def getBMSdata(self):
+        return self.parameterBMS
+        
+        
+    def updateCANfromProfinet(self, qData_fromProfinet):
+        # qDataInfromProfinet hält die aktuellen daten von der Queue vom anderen Thread
+        # -> die müssen hier gespeichert werden
+        self.Request_AUX2 = qData_fromProfinet['Request_AUX2']
+        self.Request_P = qData_fromProfinet['Request_P']
+        self.Request_C = qData_fromProfinet['Request_C']
+        self.Request_sleep = qData_fromProfinet['Request_sleep']
+        
+        if self.Request_sleep ==1:
+            self.Status_1_AUX1 = 0
+            self.Request_AUX2 = 0
+            self.Request_P = 0
+            self.Request_C = 0
+            self.Request_sleep = 1
+            
+            if self.shutdown == False:
+                self.shutdown = True
+                self.Update_time_sleep = time.time()*1000
+                print ('11111111111111111111111111111111111111111111111111111111111111111111')
+
+        self.Requests = {'Status_AUX1':self.Status_1_AUX1, 'Request_AUX2':self.Request_AUX2,'Request_P':self.Request_P, 'Request_C':self.Request_C, 'Request_sleep':self.Request_sleep}
+        logging.info('Requests {}'.format(self.Requests))
+        
+    def shutdown_code(self):
+        if self.shutdown == True:
+            if (time.time()*1000 - self.Update_time_sleep > 10000):
+                print('2222222222222222222222222222222222222222222222222222')
+                os.system('sudo shutdown now')
+
+    def getRequests(self):
+        return self.Requests
+    
+    def UpdateCANfromLadegeraet (self, data):
+        
+        if data == None:
+            self.Status_6_Ladegerät_present = 0
+            self.Kommunikation_Ladegeraet = False
+        else:
+            self.Spannung_Ladegeraet = data['Ladegeraet Spannung']
+            self.Strom_Ladegeraet = data['Ladegeraet Strom']
+            self.Status_Ladegeraet = data['Ladegeraet Status']
+            self.Kommunikation_Ladegeraet = True
+    
+    def Ladegeraet_kommuniziert (self):
+        return self.Kommunikation_Ladegeraet
+                
+    def Ladegeraet_present (self, timer):
+        if (self.Status_Ladegeraet <32) and (timer == True):
+            self.Status_6_Ladegerät_present = 1
+        else:
+            self.Status_6_Ladegerät_present = 0
+            self.Status_7_Ladegerät_aktiv = 0
+            self.Flag_geladen = False
+            self.Status_8_Ladevorgang_beendet = 0
+            
+    def Ladegeraet_aktiv (self):
+        if (self.Status_Ladegeraet == 0) and (self.Strom_Ladegeraet>1):
+            self.Status_7_Ladegerät_aktiv = 1
+
+                
+    def Ladevorgang_beendet (self):
+        if self.Strom_Ladegeraet>1:
+            self.Flag_geladen = True
+        if (self.Strom_Ladegeraet <5) and (self.Flag_geladen ==True):
+            self.Status_8_Ladevorgang_beendet = 1
+            
+    
+    def Status_laden_beendet(self):
+        return self.Status_8_Ladevorgang_beendet == 1
+            
+    
+    def Status_laden_bereit (self):
+        
+        if (self.Request_C == 1) and (self.Status_6_Ladegerät_present == 1):
+            return True
+        else:
+            self.Status_7_Ladegerät_aktiv = 0
+            self.Flag_geladen = False
+            self.Status_8_Ladevorgang_beendet = 0
+            return False
+
+    def Status_Relais_F(self,data):
+        self.Status_Relais = data['Relais_error']
+        if (self.error == 0): #and (self.Status_Relais) == 0:
+            self.Status_9_bereit = 1
+        else:
+            self.Status_9_bereit = 0
+        
+
+    def getStatusCode(self, data):
+        
+        self.Status_2_AUX2 = data['Status_AUX2']
+        self.Status_3_P_plus = data['Status_P']
+        self.Status_4_C_plus = data['Status_C']
+        
+        #Status Bits
+        
+
+        #Status_5_Balancing
+        if self.balance_status_low==0:
+            self.Status_5_Balancing = 0
+        else:
+           self.Status_5_Balancing = 1
+                    
+        Reserve_10 = 0
+        Reserve_11 = 0
+        Reserve_12 = 0
+        Reserve_13 = 0
+        Reserve_14 = 0
+        Reserve_15 = 0
+        Reserve_16 = 0
+
+        self.status = Reserve_16*2**15 + Reserve_15*2**14 + Reserve_14*2**13 + Reserve_13*2**12 + Reserve_12*2**11 + Reserve_11*2**10 + Reserve_10*2**9 + self.Status_9_bereit*2**8 + self.Status_8_Ladevorgang_beendet*2**7 + self.Status_7_Ladegerät_aktiv*2**6 + self.Status_6_Ladegerät_present*2**5 + self.Status_5_Balancing*2**4 + self.Status_4_C_plus*2**3 + self.Status_3_P_plus*2**2 + self.Status_2_AUX2*2**1 + self.Status_1_AUX1
+        return self.status
+        
+    def getWarningCode(self):
+        #Warning Bits
+        #Warning_1_Zell_min
+        if self.min_cell_voltage < 3000:
+            self.Warning_1_Zell_min = 1
+        else:
+            self.Warning_1_Zell_min = 0
+        #print(self.min_cell_voltage)
+        #Warning_2_Zell_max = 0
+        if self.max_cell_voltage > 4150:
+            self.Warning_2_Zell_max = 1
+        else:
+            self.Warning_2_Zell_max = 0
+            
+        #Warning_3_Temp_max
+        if self.temp2 > 60:
+            self.Warning_3_Temp_max = 1
+        else:
+            self.Warning_3_Temp_max = 0
+        
+        #Warning_4_Temp_min
+        if self.temp1 < 5:
+            self.Warning_4_Temp_min = 1
+        else:
+            self.Warning_4_Temp_min = 0
+        
+        #Warning_5_Strom_entl
+        
+        if self.current > 5400:
+            self.Warning_5_Strom_entl = 1
+        else:
+            self.Warning_5_Strom_entl = 0
+            
+        #Warning_6_Strom_laden
+        if self.current < -5400:
+            self.Warning_6_Strom_laden = 1
+        else:
+            self.Warning_6_Strom_laden = 0
+        
+        #Warning_7_Akku_disbalance
+        if self.max_cell_voltage - self.min_cell_voltage > 100:
+            self.Warning_7_Akku_disbalance = 1
+        else:
+            self.Warning_7_Akku_disbalance = 0
+            
+        #Warning_8_SoC_min
+        if self.SoC < 10:
+            self.Warning_8_SoC_min = 1
+        else:
+            self.Warning_8_SoC_min = 0
+        
+        
+        self.warning = self.Warning_8_SoC_min*2**7 + self.Warning_7_Akku_disbalance*2**6 + self.Warning_6_Strom_laden*2**5 + self.Warning_5_Strom_entl*2**4 + self.Warning_4_Temp_min*2**3 + self.Warning_3_Temp_max*2**2 + self.Warning_2_Zell_max*2**1 + self.Warning_1_Zell_min
+        return self.warning
+ 
+        
+    def getErrorCode(self):
+        # hier werden die berechnungen für error codes durchgeführt
+        #Error Bits
+
+        protection = int(self.protection_status)
+        if protection // 2**15 == 1:
+            #bit15 Reserve aktiv
+            protection = protection % 2**15
+        if protection // 2**14 == 1:
+            #bit14 Reserve aktiv
+            protection = protection % 2**14
+        if protection // 2**13 == 1:
+            #bit13 Reserve aktiv
+            protection = protection % 2**13
+        if protection // 2**12 == 1:
+            #bit12 MOS Software Lock in aktiv
+            protection = protection % 2**12
+        if protection // 2**11 == 1:
+            #bit11 Fore end IC Error aktiv
+            protection = protection % 2**11
+        if protection // 2**10 == 1:
+            #bit10 Short Circuit aktiv
+            protection = protection % 2**10
+        if protection // 2**9 == 1:
+            #bit9 Discharging Over current aktiv
+            self.Error_5_Strom_entl = 1
+            protection = protection % 2**9
+        if protection // 2**8 == 1:
+            #bit8 Charging Over current aktiv
+            self.Error_6_Strom_laden = 1
+            protection = protection % 2**8
+        if protection // 2**7 == 1:
+            #bit7 Discharging Low temp aktiv
+            self.Error_4_Temp_min = 1
+            protection = protection % 2**7
+        if protection // 2**6 == 1:
+            #bit6 Discharging Over temp aktiv
+            self.Error_3_Temp_max = 1
+            protection = protection % 2**6
+        if protection // 2**5 == 1:
+            #bit5 Charging Low temp aktiv
+            protection = protection % 2**5
+        if protection // 2**4 == 1:
+            #bit4 Charging Over temp aktiv
+            protection = protection % 2**4
+        if protection // 2**3 == 1:
+            #bit3 Battery Under Vol aktiv
+            protection = protection % 2**3
+        if protection // 2**2 == 1:
+            #bit2 Battery Over Vol aktiv
+            protection = protection % 2**2
+        if protection // 2**1 == 1:
+            #bit1 Cell Block Under Vol aktiv
+            self.Error_1_Zell_min = 1
+            protection = protection % 2**1
+        if protection // 1 == 1:
+            #bit0 Cell Block Over Vol aktiv
+            self.Error_2_Zell_max = 1
+            protection = protection % 1
+        self.error = self.Error_8_Fehler*2**7 + self.Error_7_Comm_Timeout*2**6 + self.Error_6_Strom_laden*2**5 + self.Error_5_Strom_entl*2**4 + self.Error_4_Temp_min*2**3 + self.Error_3_Temp_max*2**2 + self.Error_2_Zell_max*2**1 + self.Error_1_Zell_min
+        return self.error
+    
+    def printcodes(self):
+        
+        
+        print('Status_1_AUX1 = ', self.Status_1_AUX1)
+        print('Status_2_AUX2 = ', self.Status_2_AUX2)
+        print('Status_3_P_plus = ', self.Status_3_P_plus)
+        print('Status_4_C_plus = ', self.Status_4_C_plus)
+        print('Status_5_Balancing = ', self.Status_5_Balancing)
+        print('Status_6_Ladegerät_present = ',  self.Status_6_Ladegerät_present)
+        print('Status_7_Ladegerät_aktiv = ', self.Status_7_Ladegerät_aktiv)
+        print('Status_8_Ladevorgang_beendet = ', self.Status_8_Ladevorgang_beendet)
+        print('Status_9_bereit = ', self.Status_9_bereit)
+        print(bin(self.status), hex(self.status), self.status)
+        
+        print('Warning_1_Zell_min = ', self.Warning_1_Zell_min)
+        print('Warning_2_Zell_max = ', self.Warning_2_Zell_max)
+        print('Warning_3_Temp_max = ', self.Warning_3_Temp_max)
+        print('Warning_4_Temp_min = ', self.Warning_4_Temp_min)
+        print('Warning_5_Strom_entl = ', self.Warning_5_Strom_entl)
+        print('Warning_6_Strom_laden = ',  self.Warning_6_Strom_laden)
+        print('Warning_7_Akku_disbalance = ', self.Warning_7_Akku_disbalance)
+        print('Warning_8_SoC_min = ', self.Warning_8_SoC_min)
+        print(bin(self.warning), hex(self.warning), self.warning)
+        
+        print('Error_1_Zell_min = ', self.Error_1_Zell_min)
+        print('Error_2_Zell_max = ', self.Error_2_Zell_max)
+        print('Error_3_Temp_max = ', self.Error_3_Temp_max)
+        print('Error_4_Temp_min = ', self.Error_4_Temp_min)
+        print('Error_5_Strom_entl = ', self.Error_5_Strom_entl)
+        print('Error_6_Strom_laden = ',  self.Error_6_Strom_laden)
+        print('Error_7_Comm_Timeout = ', self.Error_7_Comm_Timeout)
+        print('Error_8_Fehler = ', self.Error_8_Fehler)
+        print(bin(self.error), hex(self.error), self.error)
+        

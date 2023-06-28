@@ -1,0 +1,284 @@
+#!/usr/bin/python3
+
+########################################################################
+# V1.0
+########################################################################
+
+
+from re import S
+from smartBMS import Request, smartBMS
+from dataprocess import dataprocessing
+from UDP import UDP
+import time
+from datetime import datetime
+import threading
+from multiprocessing import Queue
+from programm_Ladegeraet import Ladegeraet
+from clIO import clIO
+import configparser
+import logging
+from clHelper import checkTime
+from clTBH import clTBH
+
+
+
+
+config = configparser.ConfigParser()
+config.read("/home/hell/sw/etc/bms.config")
+
+
+TBServer  = config['thingsboard']['Server']
+TBToken  = config['thingsboard']['Token']
+TBAkku  = config['thingsboard']['Akku']
+TBSN  = config['thingsboard']['Seriennummer']
+
+#logging.basicConfig(level=logging.DEBUG)
+#logging.basicConfig(level=logging.INFO)           #Testausgabe Werte
+#logging.basicConfig(level=logging.WARNING)
+#logging.basicConfig(level=logging.ERROR)   
+
+LevelState=logging.ERROR
+#LevelState=logging.INFO
+logging.basicConfig(level=LevelState)   
+
+toBmsQueue = Queue()
+fromBmsQueue = Queue()
+
+fromLadegeraet = Queue()
+toLadegeraet = Queue()
+
+toUDPQueue = Queue()
+fromUDPQueue = Queue()
+
+toTBHQueue = Queue()
+
+qDatafromBMS = 0
+Data={}
+
+
+# read Rock Pi CPU Temperatur sensor
+temp_base ="/sys/class/thermal/thermal_zone0/temp"
+
+def rTemp(tempsensor):
+  try:
+    f = open(tempsensor,'r')
+    tempvalue=f.readline()
+    f.close
+  except:
+    tempvalue=0
+  
+  #print("CPUTemp:", tempvalue)
+
+  return(tempvalue)
+
+def TimeStmp():
+  #date and time
+  now = datetime.now()
+  dt_string = now.strftime("%d.%m.%Y %H:%M:%S")
+  return(dt_string)
+
+
+Starttime = int(round(time.time() * 1000))
+if __name__ == '__main__':
+    
+    logging.error("Programm Start...")
+    threads = []
+    sendReq = 0
+    
+    
+    CPUTemp= rTemp(temp_base)
+    
+    t1 = checkTime()  
+    t2 = checkTime()  
+    #Threads starten
+    bms = smartBMS(0,1000, toBmsQueue, fromBmsQueue)
+    bms.start()
+    
+    lade = Ladegeraet(0, 1000, fromLadegeraet, toLadegeraet)
+    lade.start()
+
+    UDP = UDP(0,1000,toUDPQueue, fromUDPQueue)
+    UDP.start()
+
+    tb = clTBH(toTBHQueue, host=TBServer, token=TBToken, port=1883  )  # Thingsboard connection
+    tb.start()
+    
+    dataproc = dataprocessing()
+
+    io = clIO()
+
+    time.sleep(.1)
+
+    t = int(round(time.time() * 1000))
+    updateTimeStart_dataprocessing = int(round(time.time() * 1000))
+    updateTimeStart_Ladegeraet = int(round(time.time() * 1000))
+    updateTimeStart_Ladegeraet_laden = int(round(time.time() * 1000))
+    updateTimeStart_ChargeRate = int(round(time.time() * 1000))
+    Timer_Ladegeraet_present = 0
+    Flag = False
+    
+    
+    try:
+        while(1):
+            
+            time.sleep(.01)   #wichtig sonst 100% cpu auslastung
+
+            try:
+                qDatafromBMS = fromBmsQueue.get_nowait()
+                if (qDatafromBMS):
+                    dataproc.updateBMS(qDatafromBMS)
+                    logging.info('BMS Daten geladen')
+
+            except:
+                # do nothing
+                pass
+            
+            try:
+                qfromUDP = fromUDPQueue.get_nowait()
+                
+                dataproc.DatafromProfinet(qfromUDP)
+            except:
+                pass
+                
+            try:
+                qData_fromLadegeraet = fromLadegeraet.get_nowait()
+                dataproc.UpdateCANfromLadegeraet(qData_fromLadegeraet)
+                logging.info('Nachricht von Ladegerät erhalten')
+            except:
+                # do nothing
+                pass
+
+            #Temperatur sensor Rock PI E auslesen
+            if( t2.getTime(1000) ):
+                CPUTemp= rTemp(temp_base)
+                CPUTemp=int(CPUTemp)/1000
+                
+            if (int(round(time.time() * 1000)) - updateTimeStart_dataprocessing) >250: # every 250ms   
+                updateTimeStart_dataprocessing = int(round(time.time() * 1000))
+                # jede x millisekunde werden die error codes und status bits neu berechnet
+                
+                IO_Input = dataproc.getRequests()
+                IO_Output = io.StatusIOs()
+                relay_error = io.IO_set_and_check(IO_Input)
+                logging.info(relay_error)
+                dataproc.Status_Relais_F(relay_error)
+                
+                BMS_Data = dataproc.getBMSdata()
+                
+                dataproc.calculateStatusCodes(IO_Output)
+                statusA = dataproc.getStatusA()
+                statusB = dataproc.getStatusB()
+                
+                dataproc.calculateWarningCodes()
+                warningA = dataproc.getWarningA()
+                warningB = dataproc.getWarningB()
+                
+                dataproc.calculateErrorCodes()
+                errorA = dataproc.getErrorA()
+                errorB = dataproc.getErrorB()
+
+                tChargeRate = dataproc.getChargeRate()
+                #tChargeRate = 1
+                
+                '''
+                if LevelState == logging.INFO:
+                    dataproc.printcodes() 
+                '''
+                #dataproc.printcodes()
+                dataproc.shutdown_code()
+                
+                if LevelState == logging.INFO:
+                    bms.printData()
+                    print('BMS Data: ',BMS_Data);print('Status: A',statusA);print('Status: B',statusB); print('Warning A: ',warningA);print('Warning B: ',warningB);print('Error A: ',errorA); print('Error B: ',errorB)
+
+                Data = BMS_Data
+                Data.update({'StatusA': statusA, 'StatusB': statusB, 'WarningA': warningA,  'WarningB': warningB, 'ErrorA':errorA, 'ErrorB':errorB})
+                Data.update({'Temperatur 8': CPUTemp  })
+                toUDPQueue.put(Data)
+                
+                
+
+            if (dataproc.Ladegeraet_kommuniziert() == True):
+                
+                
+                if ((int(round(time.time() * 1000)) - updateTimeStart_Ladegeraet)>1000):
+                    updateTimeStart_Ladegeraet = int(round(time.time() * 1000))
+                    Timer_Ladegeraet_present = Timer_Ladegeraet_present + 1000 # mit Timer oben ändern (every XXXms)
+                    
+                    if (Timer_Ladegeraet_present >=5000):
+                        dataproc.Ladegeraet_present(True)
+
+                    
+                dataproc.Ladevorgang_beendet()
+                    
+                
+                if (dataproc.Status_laden_bereit() == True) and (dataproc.Status_laden_beendet() == False):
+                    if ((int(round(time.time() * 1000)) - updateTimeStart_Ladegeraet_laden)>1000): # every 1000ms
+                        updateTimeStart_Ladegeraet_laden = int(round(time.time() * 1000))
+                        Data['Regler']=0
+                        
+                        #nach 1min wird Laderate auf 80% reduziert
+                        if  ((int(round(time.time() * 1000)) - updateTimeStart_ChargeRate)>1200000) and (tChargeRate>0.9):
+                            sChargeRate = 0.8
+                        else:
+                            sChargeRate = 1
+                        
+                        if CPUTemp>80:
+                            sChargeRate = 0.2
+                        
+                        if tChargeRate==0:
+                            ChargeRate = 0
+                        else:
+                            ChargeRate=tChargeRate*sChargeRate
+                        print('Laderate: ',ChargeRate)
+                        Data.update({'Laderate': ChargeRate  })
+                        toLadegeraet.put(Data)
+
+                        dataproc.Ladegeraet_aktiv()
+                        Flag = True
+                ### Ladevorgang aktiv beenden
+                if (dataproc.Status_laden_bereit() == False) and (Flag == True):
+                    Data['Regler']=1
+			
+                    toLadegeraet.put(Data)
+                    Flag = False
+            else:
+                Timer_Ladegeraet_present = 0
+                dataproc.Ladegeraet_present(False)
+            
+            
+            #Daten an Thingsboard
+            try:
+                if( t1.getTime(5000) ):
+                    Data.update({'Akkuname': TBAkku})
+                    Data.update({'SerienNummer': TBSN })
+                    Data.update({'Zeit': TimeStmp()  })
+                    Data.update({'CPUTemp': CPUTemp  })
+
+                    toTBHQueue.put(Data) 
+                    
+            except:
+                pass
+
+            #print(Data)
+
+            
+
+    
+        
+    except KeyboardInterrupt:
+        toBmsQueue.put("SIG-INT")
+        toLadegeraet.put("SIG-INT")
+        toTBHQueue.put("SIG-INT")
+        toUDPQueue.put("SIG-INT")
+        toTBHQueue.put("SIG-INT")
+        
+        print("wait for threads to join")
+        bms.join()
+        lade.join()
+        UDP.join()
+        tb.join()        
+        print("threads successfully closed")
+    
+
+
