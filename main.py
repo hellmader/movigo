@@ -51,14 +51,14 @@ TBAkku  = config['thingsboard']['Akku']
 TBSN  = config['thingsboard']['Seriennummer']
 APP_MODE=TBSN[:4]
 
-TuenkersCAN_ID=["3042","3419"]
-TuenkersPROFI_ID=["3212","3222","2455","3470"]
-if APP_MODE in(TuenkersCAN_ID):
+TuenkersPROFI_ID=["3042","3419"]
+TuenkersCAN_ID=["3212","3222","2455","3470"]
+if APP_MODE in(TuenkersPROFI_ID):
     from UDP_p import UDP
-    APP_MODE = "TuenkersCAN"
-elif APP_MODE in(TuenkersPROFI_ID):
-    from UDP_c import UDP
     APP_MODE = "TuenkersPROFI"
+elif APP_MODE in(TuenkersCAN_ID):
+    from UDP_c import UDP
+    APP_MODE = "TuenkersCAN"
 
 
 #logging.basicConfig(level=logging.DEBUG)
@@ -239,11 +239,11 @@ if __name__ == '__main__':
                 Data.update(ueberwache_system())
                 CPUTemp= ueberwache_system()["CPUTemp"]
                 #dataproc.printcodes()
-                if APP_MODE in("TuenkersCAN" ,"TuenkersProfi"):
+                if APP_MODE in("TuenkersCAN" ,"TuenkersPROFI"):
                     dataproc.Ladegeraet_present()
                     dataproc.Ladegeraet_aktiv()
                     dataproc.Ladevorgang_beendet()
-                    if APP_MODE in("TuenkersCAN"):
+                    if APP_MODE in("TuenkersPROFI"):
                         Data.update({'tcharge': dataproc.getChargeRate()})
                         
                     Data.update({'StatusLaden': dataproc.Status_laden_bereit()})
