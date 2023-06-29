@@ -180,7 +180,7 @@ class dataprocessing():
         #Bit0 AUX2
         
         # sps wird nicht beachtet bei AUX2
-        self.Request_AUX2 = 1 #int(bin(Controlbits>>0)[-1])
+        self.Request_AUX2 = int(bin(Controlbits>>0)[-1])
         #if bin(Controlbits>>0)[-1]=='0':
         #    self.Request_AUX2 = 0
         #else:
@@ -218,14 +218,6 @@ class dataprocessing():
         if bin(Controlbits>>5)[-1]=='0':
             self.Request_sleep = 0
         else:
-            self.Request_sleep = 1
-
-            self.Status_A0_AUX1 = 1
-            self.Request_AUX2 = 0
-            self.Request_AUX3 = 0
-            self.Request_AUX4 = 0
-            self.Request_P = 0
-            self.Request_C = 0
             self.Request_sleep = 1
             
             if self.shutdown == False:

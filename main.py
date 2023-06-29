@@ -51,9 +51,11 @@ TBAkku  = config['thingsboard']['Akku']
 TBSN  = config['thingsboard']['Seriennummer']
 APP_MODE=TBSN[:4]
 
-if APP_MODE=="3042":
+SNUMMER = ["3042","3419","3212","3222","2455","3470"]
+
+if APP_MODE in(SNUMMER[:2]):
     from UDP_p import UDP
-elif (APP_MODE=="3222" or APP_MODE=="3212" or APP_MODE=="3455" ):
+elif APP_MODE in(SNUMMER[2:]):
     from UDP_c import UDP
 
 
@@ -235,11 +237,11 @@ if __name__ == '__main__':
                 Data.update(ueberwache_system())
                 CPUTemp= ueberwache_system()["CPUTemp"]
                 #dataproc.printcodes()
-                if(APP_MODE=="3042" or APP_MODE=="3222" or APP_MODE=="3212" or APP_MODE=="3455" ):
+                if APP_MODE in(SNUMMER):
                     dataproc.Ladegeraet_present()
                     dataproc.Ladegeraet_aktiv()
                     dataproc.Ladevorgang_beendet()
-                    if(APP_MODE=="3042"):
+                    if APP_MODE in(SNUMMER[:2]):
                         Data.update({'tcharge': dataproc.getChargeRate()})
                         
                     Data.update({'StatusLaden': dataproc.Status_laden_bereit()})

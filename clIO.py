@@ -138,43 +138,101 @@ class clIO:
             self.Request_C = data['Request_C']
             self.Request_sleep = data['Request_sleep']
         
-        if self.Status_AUX1 == 0:
-            #t.sleep(2)
-            self.SetRelay(1, 0)
+        if self.Request_sleep == 0:
+            pass
         else:
-            self.SetRelay(1, 1)
-        if data['TBSN'][4:6] == '-1':
-            if self.Request_AUX2 == 0:
-                #t.sleep(2)
-                self.SetRelay(2, 1)
+            self.Request_AUX3 = 0
+            self.Request_AUX4 = 0
+            self.Request_P = 0
+            self.Request_C = 0
+            self.Request_sleep = 1
+        
+        if data['TBSN'][:4] == '3042':
+            self.Request_AUX2 = 1
+            if self.Request_sleep == 0:
+                pass
             else:
-                self.SetRelay(2, 0)
-        else:
-            if self.Request_AUX2 == 0:
+                self.Status_A0_AUX1 = 1
+                self.Request_AUX2 = 0
+            if self.Status_AUX1 == 0:
                 #t.sleep(2)
-                self.SetRelay(2, 0)
+                self.SetRelay(1, 0)
             else:
-                self.SetRelay(2, 1)
-
-        if self.Request_P == 0:
-            #t.sleep(2)
-            self.SetRelay(3, 0)
+                self.SetRelay(1, 1)
+                
+            if data['TBSN'][4:6] == '-1':
+                if self.Request_AUX2 == 0:
+                    #t.sleep(2)
+                    self.SetRelay(2, 1)
+                else:
+                    self.SetRelay(2, 0)
+            else:
+                if self.Request_AUX2 == 0:
+                    #t.sleep(2)
+                    self.SetRelay(2, 0)
+                else:
+                    self.SetRelay(2, 1)
+        
+            if self.Request_P == 0:
+                #t.sleep(2)
+                self.SetRelay(3, 0)
+            else:
+                self.SetRelay(3, 1)
+                
+            if self.Request_C == 0:
+                if self.Flag_Relay_C ==True:
+                    if (int(round(t.time() * 1000)) - self.Starttime) >250: # every 250ms   
+                        self.Starttime = int(round(t.time() * 1000))
+                        self.Zahl = self.Zahl +1
+                        if self.Zahl >= 12:
+                            self.SetRelay(4, 0)
+                            self.Flag_Relay_C = False
+                            self.Zahl = 0
+                            
+            else:
+                self.SetRelay(4, 1)
+                self.Flag_Relay_C = True
+        
         else:
-            self.SetRelay(3, 1)
+            if data['TBSN'][4:6] in ('-1','-2','-3','-4','-5','-6'):
+                if self.Status_AUX1 == 0:
+                    #t.sleep(2)
+                    self.SetRelay(1, 1)
+                else:
+                    self.SetRelay(1, 0)
+            else:
+                if self.Status_AUX1 == 0:
+                    #t.sleep(2)
+                    self.SetRelay(1, 0)
+                else:
+                    self.SetRelay(1, 1)
             
-        if self.Request_C == 0:
-            if self.Flag_Relay_C ==True:
-                if (int(round(t.time() * 1000)) - self.Starttime) >250: # every 250ms   
-                    self.Starttime = int(round(t.time() * 1000))
-                    self.Zahl = self.Zahl +1
-                    if self.Zahl >= 12:
-                        self.SetRelay(4, 0)
-                        self.Flag_Relay_C = False
-                        self.Zahl = 0
-                        
-        else:
-            self.SetRelay(4, 1)
-            self.Flag_Relay_C = True
+            if self.Request_AUX2 == 0:
+                #t.sleep(2)
+                self.SetRelay(2, 0)
+            else:
+                self.SetRelay(2, 1)
+                
+            if self.Request_P == 1 and self.Request_C == 1:
+                self.SetRelay(3, 1)
+                self.Flag_Relay_C = True
+            elif self.Request_P == 1 and self.Request_C == 0:
+                self.SetRelay(3, 1)
+                self.Flag_Relay_C = False
+            elif self.Request_P == 0 and self.Request_C == 1:
+                self.SetRelay(3, 1)
+                self.Flag_Relay_C = True
+            else:
+                if self.Flag_Relay_C ==True:
+                    if (int(round(t.time() * 1000)) - self.Starttime) >250: # every 250ms   
+                        self.Starttime = int(round(t.time() * 1000))
+                        self.Zahl = self.Zahl +1
+                        if self.Zahl >= 12:
+                            self.SetRelay(3, 0)
+                            self.Flag_Relay_C = False
+                            self.Zahl = 0
+                else: 
+                    self.SetRelay(3, 0)
 
             
             
