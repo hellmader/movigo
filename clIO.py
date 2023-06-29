@@ -130,7 +130,6 @@ class clIO:
         return(ReturnInput)            
     
     def IO_set_and_check(self, data):
-        #print(data)
         if data != None:
             self.Status_AUX1 = data['Status_AUX1']
             self.Request_AUX2 = data['Request_AUX2']
@@ -141,13 +140,15 @@ class clIO:
         if self.Request_sleep == 0:
             pass
         else:
+            self.Status_AUX1 = 0
+            self.Request_AUX2 = 0
             self.Request_AUX3 = 0
             self.Request_AUX4 = 0
             self.Request_P = 0
             self.Request_C = 0
             self.Request_sleep = 1
         
-        if data['TBSN'][:4] == '3042':
+        if data['APP_Mode'] == 'TuenkersPROFI':
             self.Request_AUX2 = 1
             if self.Request_sleep == 0:
                 pass
@@ -193,7 +194,7 @@ class clIO:
                 self.SetRelay(4, 1)
                 self.Flag_Relay_C = True
         
-        else:
+        if data['APP_Mode'] == 'TuenkersCAN':
             if data['TBSN'][4:6] in ('-1','-2','-3','-4','-5','-6'):
                 if self.Status_AUX1 == 0:
                     #t.sleep(2)
@@ -212,7 +213,6 @@ class clIO:
                 self.SetRelay(2, 0)
             else:
                 self.SetRelay(2, 1)
-                
             if self.Request_P == 1 and self.Request_C == 1:
                 self.SetRelay(3, 1)
                 self.Flag_Relay_C = True

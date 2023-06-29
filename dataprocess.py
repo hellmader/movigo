@@ -132,7 +132,7 @@ class dataprocessing():
         self.Request_P = 0
         self.Request_C = 0
         self.Request_sleep = 0
-        self.Requests = {'Status_AUX1':1, 'Request_AUX2':1, 'Request_AUX3':0, 'Request_AUX4':0, 'Request_P':0, 'Request_C':0, 'Request_sleep':0}
+        self.Requests = {'Status_AUX1':1, 'Request_AUX2':0, 'Request_AUX3':0, 'Request_AUX4':0, 'Request_P':0, 'Request_C':0, 'Request_sleep':0}
         #self.Requests = {'Status_AUX1':self.Status_A0_AUX1, 'Request_AUX2':self.Request_AUX2,'Request_P':self.Request_P, 'Request_C':self.Request_C, 'Request_sleep':self.Request_sleep}
         
         #Thingsboard
@@ -141,7 +141,7 @@ class dataprocessing():
         #shutdown
         self.shutdown = False
         self.Update_time_sleep =0 
-        
+        self.APP_Mode=0
         
    
     
@@ -173,49 +173,36 @@ class dataprocessing():
     def DatafromProfinet(self, qData_fromProfinet):
         # qDataInfromProfinet hält die aktuellen daten von der Queue vom anderen Thread
         # -> die müssen hier gespeichert werden
-        Chargerate = qData_fromProfinet['Chargerate']
-        Controlbits = qData_fromProfinet['Controlbits']
-        self.Chargerate = float(Chargerate)
+        self.APP_Mode=qData_fromProfinet['APP_Mode']
+        Controlbits= qData_fromProfinet['Controlbits']
+        
+        try:
+            self.Chargerate = qData_fromProfinet['Chargerate']
+        except:
+            self.Chargerate = int(1)
+            pass
+        
+       
+        
         #NAMES_CONTROLBITS = {0: "AUX2",1: "AUX3",2: "AUX4",3: "DischargeRelay",4: "ChargeRelay",5: "Sleep",6: "FC1",7: "FC2",}
         #Bit0 AUX2
-        
         # sps wird nicht beachtet bei AUX2
         self.Request_AUX2 = int(bin(Controlbits>>0)[-1])
-        #if bin(Controlbits>>0)[-1]=='0':
-        #    self.Request_AUX2 = 0
-        #else:
-        #    self.Request_AUX2 = 1
-   
+        
         #Bit1 AUX3
         self.Request_AUX3 = int(bin(Controlbits>>1)[-1])
-        #if bin(Controlbits>>1)[-1]=='0':
-        #    self.Request_AUX3 = 0
-        #else:
-        #    self.Request_AUX3 = 1   
         
         #Bit2 AUX4
         self.Request_AUX4 = int(bin(Controlbits>>2)[-1])
-        #if bin(Controlbits>>2)[-1]=='0':
-        #    self.Request_AUX4 = 0
-        #else:
-        #    self.Request_AUX4 = 1
         
         #Bit3 Freigabe P+
-        self.Request_P = int(bin(Controlbits>>3)[-1])
-        #if bin(Controlbits>>3)[-1]=='0':
-        #    self.Request_P = 0
-        #else:
-        #    self.Request_P = 1
-            
-        #Bit4 Ladefreigabe
-        self.Request_C = int(bin(Controlbits>>4)[-1])
-        #if bin(Controlbits>>4)[-1]=='0':
-        #    self.Request_C = 0
-        #else:
-        #    self.Request_C = 1
+        self.Request_P = int(bin(Controlbits>>(3))[-1])
         
+        #Bit4 Ladefreigabe
+        self.Request_C = int(bin(Controlbits>>(4))[-1])
+    
         #Bit5 Request Sleep
-        if bin(Controlbits>>5)[-1]=='0':
+        if bin(Controlbits>>(5))[-1]=='0':
             self.Request_sleep = 0
         else:
             self.Request_sleep = 1
@@ -227,11 +214,11 @@ class dataprocessing():
             if self.shutdown == False:
                 self.shutdown = True
                 self.Update_time_sleep = time.time()*1000
-
+                 
+        
+            
 
         self.Requests = {'Status_AUX1':self.Status_A0_AUX1, 'Request_AUX2':self.Request_AUX2, 'Request_AUX3':self.Request_AUX3, 'Request_AUX4':self.Request_AUX4, 'Request_P':self.Request_P, 'Request_C':self.Request_C, 'Request_sleep':self.Request_sleep}
-
-
         logging.info('Requests {}'.format(self.Requests))
     
     def getChargeRate(self):
@@ -239,9 +226,12 @@ class dataprocessing():
         
     def shutdown_code(self):
         if self.shutdown == True:
-            os.system('sudo systemctl stop profinet')
+            if self.APP_Mode in("TuenkersPROFI"):
+                os.system('sudo systemctl stop profinet')
+            
+            if self.APP_Mode in("TuenkersCAN"):
+                os.system('sudo systemctl stop canopen')
             if (time.time()*1000 - self.Update_time_sleep > 10000):
-
                 os.system('sudo shutdown -h now')
 
     def getRequests(self):

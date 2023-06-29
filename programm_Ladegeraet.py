@@ -9,6 +9,7 @@ import threading
 import enum
 import can
 import logging
+import configparser
 
 class Request(enum.Enum):
     NONE = 0
@@ -26,47 +27,70 @@ class Ladegeraet(threading.Thread):
         self.updateCycle = updateCycle
         self.outCANfromLadegeraet = outCANfromLadegeraet
         self.inCANtoLadegeraet = inCANtoLadegeraet
-
+        
+        config = configparser.ConfigParser()
+        config.read("/home/hell/sw/etc/bms.config")
+        TBAkku  = config['thingsboard']['Akku']
+        TBSN  = config['thingsboard']['Seriennummer']
+        APP_Mode=TBSN[:4]
+        TuenkersPROFI_ID=["3042","3419"]
+        TuenkersCAN_ID=["3212","3222","2455","3470"]
+        if APP_Mode in(TuenkersPROFI_ID):
+            baudrate=250000
+        elif APP_Mode in(TuenkersCAN_ID):
+            baudrate=500000
         
         self.readCANfromLadegeraet = None
-        self.readcan = can.interface.Bus(channel = 'can0', bustype = 'socketcan', bitrate=250000, can_filters = [{"can_id": 0x18FF50E5 , "can_mask": 0x1FFFFFFF, "extended": True}])
+        self.readcan = can.interface.Bus(channel = 'can0', bustype = 'socketcan', bitrate=baudrate, can_filters = [{"can_id": 0x18FF50E5 , "can_mask": 0x1FFFFFFF, "extended": True}])
         self.Spannung_Ladegeraet = 0
         self.Strom_Ladegeraet = 0
         self.Status_Ladegeraet = None
         
-        self.writecan = can.interface.Bus(channel = 'can0', bustype = 'socketcan', bitrate=250000)
+        self.writecan = can.interface.Bus(channel = 'can0', bustype = 'socketcan', bitrate=baudrate)
         self.Ladeschlussspannung = 54.6*10
         self.Ladestrom = 50*10 #500
         self.Regler = 0 #0: Charger start charging, 1: Battery protection Charger Stop Output, 2: Heating mode
         self.SoC = 0
         self.none_count = 0
         self.time_last_msg = None
-
+        self.time_first_msg= None
+        self.Flag = False
 
     
     def readLadegeraet(self):
         msg = self.readcan.recv(2)
         #logging.info(msg)
+        
         if msg is None:
-            
-            self.readCANfromLadegeraet = None
             self.none_count += 1
             if self.none_count >= 5:
                 self.time_last_msg = time.time()
                 self.none_count = 0
-                
+            if (time.time() - self.time_last_msg<= 5):
+                pass
+            elif (time.time()-self.time_first_msg>= 5):
+                self.readCANfromLadegeraet = None
             
         else:
-            self.Spannung_Ladegeraet = int.from_bytes(msg.data[0:2], 'big') # 531 bedeutet 53,1V
-            self.Strom_Ladegeraet = int.from_bytes(msg.data[2:4], 'big') # 280 bedeutet 28A
-            self.Status_Ladegeraet = int.from_bytes(msg.data[4:5], 'big')
+            if self.Flag ==True:
+                self.time_first_msg=time.time()
+                self.Flag = False
+            if time.time()-self.time_first_msg >=5:
+               
+                self.Spannung_Ladegeraet = int.from_bytes(msg.data[0:2], 'big') # 531 bedeutet 53,1V
+                self.Strom_Ladegeraet = int.from_bytes(msg.data[2:4], 'big') # 280 bedeutet 28A
+                self.Status_Ladegeraet = int.from_bytes(msg.data[4:5], 'big')
+                if (self.Status_Ladegeraet <32) or (self.Status_Ladegeraet == 0):
+                    self.readCANfromLadegeraet = {'Ladegeraet Spannung': self.Spannung_Ladegeraet, 'Ladegeraet Strom': self.Strom_Ladegeraet, 'Ladegeraet Status': self.Status_Ladegeraet,'Ladegeraet Present': True}
+                #logging.info('Ladegerät gefunden')
+            else:
+                self.readCANfromLadegeraet = None
+            self.time_last_msg = time.time()
             
-            if (self.Status_Ladegeraet <32) or (self.Status_Ladegeraet == 0):
-                self.readCANfromLadegeraet = {'Ladegeraet Spannung': self.Spannung_Ladegeraet, 'Ladegeraet Strom': self.Strom_Ladegeraet, 'Ladegeraet Status': self.Status_Ladegeraet,'Ladegeraet Present': False}
-            #logging.info('Ladegerät gefunden')
+        if(time.time()-self.time_last_msg>= 5):
+            self.readCANfromLadegeraet = None
+            self.Flag = True
             
-            if(time.time()-self.time_last_msg>= 5):
-                self.readCANfromLadegeraet['Ladegeraet Present'] = True
         self.outCANfromLadegeraet.put(self.readCANfromLadegeraet)
         time.sleep(0.01)
         
@@ -129,7 +153,7 @@ class Ladegeraet(threading.Thread):
             self.Regler=1
         data_Ladegeraet =int(self.Ladeschlussspannung*10).to_bytes(2, 'big') + int(self.Ladestrom*self.Laderate*10).to_bytes(2, 'big') + int(self.Regler).to_bytes(1, 'big') + int(self.SoC).to_bytes(1, 'big') + int(0).to_bytes(2, 'big')
         msg = can.Message(data=data_Ladegeraet, arbitration_id=0X1806E5F4, is_extended_id=True)
-        
+       
         logging.info(msg)
         self.writecan.send(msg)
         
@@ -141,7 +165,7 @@ class Ladegeraet(threading.Thread):
         incData = []
         self.running = True
         self.time_last_msg=time.time()
-       
+        self.time_first_msg= time.time()
         while(self.running):
             time.sleep(.01)   #wichtig sonst 100% cpu auslastung
             #check for incoming data from main thread

@@ -49,16 +49,16 @@ TBServer  = config['thingsboard']['Server']
 TBToken  = config['thingsboard']['Token']
 TBAkku  = config['thingsboard']['Akku']
 TBSN  = config['thingsboard']['Seriennummer']
-APP_MODE=TBSN[:4]
+APP_Mode=TBSN[:4]
 
 TuenkersPROFI_ID=["3042","3419"]
 TuenkersCAN_ID=["3212","3222","2455","3470"]
-if APP_MODE in(TuenkersPROFI_ID):
+if APP_Mode in(TuenkersPROFI_ID):
     from UDP_p import UDP
-    APP_MODE = "TuenkersPROFI"
-elif APP_MODE in(TuenkersCAN_ID):
+    APP_Mode = "TuenkersPROFI"
+elif APP_Mode in(TuenkersCAN_ID):
     from UDP_c import UDP
-    APP_MODE = "TuenkersCAN"
+    APP_Mode = "TuenkersCAN"
 
 
 #logging.basicConfig(level=logging.DEBUG)
@@ -192,7 +192,9 @@ if __name__ == '__main__':
             
             try:
                 qfromUDP = fromUDPQueue.get_nowait()
+                qfromUDP.update({'APP_Mode': APP_Mode})
                 dataproc.DatafromProfinet(qfromUDP)
+                
             except:
                 pass
                 
@@ -210,7 +212,7 @@ if __name__ == '__main__':
                 
                 #setzen der Relais
                 IO_Input = dataproc.getRequests()
-                IO_Input.update({'TBSN': TBSN})
+                IO_Input.update({'TBSN': TBSN,'APP_Mode': APP_Mode})
                 relay_error = io.IO_set_and_check(IO_Input)
                 logging.info(relay_error)
                 dataproc.Status_Relais_F(relay_error)
@@ -235,17 +237,16 @@ if __name__ == '__main__':
                 Data.update({'StatusA': statusA, 'StatusB': statusB, 'WarningA': warningA,  'WarningB': warningB, 'ErrorA':errorA, 'ErrorB':errorB})
                 Data.update(IO_Input)
                 
-                Data.update({'APP-Mode': APP_MODE})
+                Data.update({'APP_Mode': APP_Mode})
                 Data.update(ueberwache_system())
                 CPUTemp= ueberwache_system()["CPUTemp"]
                 #dataproc.printcodes()
-                if APP_MODE in("TuenkersCAN" ,"TuenkersPROFI"):
+                if APP_Mode in("TuenkersCAN" ,"TuenkersPROFI"):
                     dataproc.Ladegeraet_present()
                     dataproc.Ladegeraet_aktiv()
                     dataproc.Ladevorgang_beendet()
-                    if APP_MODE in("TuenkersPROFI"):
+                    if APP_Mode in("TuenkersPROFI"):
                         Data.update({'tcharge': dataproc.getChargeRate()})
-                        
                     Data.update({'StatusLaden': dataproc.Status_laden_bereit()})
                     Data.update({'StatusLadenEnde': dataproc.Status_laden_beendet()})
 
