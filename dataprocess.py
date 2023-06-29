@@ -219,7 +219,11 @@ class dataprocessing():
             self.Request_sleep = 0
         else:
             self.Request_sleep = 1
-            
+            self.Request_AUX2 = 0
+            self.Request_AUX3 = 0
+            self.Request_AUX4 = 0
+            self.Request_P = 0
+            self.Request_C = 0
             if self.shutdown == False:
                 self.shutdown = True
                 self.Update_time_sleep = time.time()*1000
