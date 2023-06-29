@@ -6,7 +6,7 @@ import enum
 import numpy as np
 import can
 
-import profinet_client_lib
+import canopen_client_lib
 from typing import Any
 
 
@@ -15,7 +15,7 @@ class Request(enum.Enum):
     BASIC_INFO = 1
     CELL_VOLTAGE = 2
 
-def UDP_callback(output: profinet_client_lib.Outputdata, arg: Any) -> None:
+def UDP_callback(output: canopen_client_lib.Outputdata, arg: Any) -> None:
     
     """Callback triggered when new outputdata arrives from the PLC
 
@@ -46,7 +46,7 @@ class UDP(threading.Thread):
         self.UDP_REMOTE_IP = "127.0.0.1"
         self.UDP_REMOTE_PORT = 5571
         self.LOOP_SLEEP_TIME = 0.5
-        self.client = profinet_client_lib.ProfinetServiceClient(self.UDP_REMOTE_IP, self.UDP_REMOTE_PORT, UDP_callback, self.outUDPtoMain)
+        self.client = canopen_client_lib.ProfinetServiceClient(self.UDP_REMOTE_IP, self.UDP_REMOTE_PORT, UDP_callback, self.outUDPtoMain)
         
 
 
@@ -54,7 +54,7 @@ class UDP(threading.Thread):
 
     def sendUDP(self,data):
         #data = {'Spannung': 45.9+i, 'Strom': 0, 'SoC': 100, 'Temperatur 1': 24.2, 'Temperatur 2': 25.1, 'Temperatur 3': 23.4, 'Temperatur 4': -273.15, 'maximale Zellspannung': 3.534, 'Position maximale Zellspannung': 10, 'minimale Zellspannung': 3.526, 'Position minimale Zellspannung': 5, 'Isolationswiderstand Gehäuse gegen PLUS': 38, 'Isolationswiderstand Gehäuse gegen MINUS': 38, 'spezifischer Isolationswiderstand Gehäuse gegen PLUS': 50, 'spezifischer Isolationswiderstand Gehäuse gegen MINUS': 50, 'Protection Status': 0, 'Balance Status': 0, 'Anzahl der Seriell-Verbindungen': 13, 'maximal erlaubte Zellspannung': 4.25, 'minimal erlaubte Zellspannung': 2.7, 'maximal erlaubte Batteriespannung': 55.25, 'minimal erlaubte Batteriespannung': 35.1, 'maximaler Entladestrom': 60, 'maximaler Ladestrom': 60, 'Minimale Temperatur Laden': 5, 'Maximale Temperatur Laden': 60, 'Minimale Temperatur Entladen': 0, 'Maximale Temperatur Entladen': 65, 'Fehlerauslösezeit': 5, 'nominelle Spannung': 48.1, 'nominelle Kapazität': 52.0, 'nominelle Energie': 2501.2000000000003, 'StatusA': 1, 'StatusB': 4, 'WarningA': 0, 'WarningB': 0, 'ErrorA': 0, 'ErrorB': 0}
-        input = profinet_client_lib.Inputdata()
+        input = canopen_client_lib.Inputdata()
         input.valid = True
         input.allowed_charge_current = data['maximaler Ladestrom']
         input.allowed_charge_temp_max = data['Maximale Temperatur Laden']
