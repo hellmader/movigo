@@ -6,9 +6,9 @@
 
 
 #from re import S
-tcpdump_logg=True
+tcpdump_logg=False
 csv_logg=False
-candump_logg=True
+candump_logg=False
 
 import pprint
 from clBMS import Request, smartBMS
