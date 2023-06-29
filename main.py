@@ -52,7 +52,7 @@ TBSN  = config['thingsboard']['Seriennummer']
 APP_MODE=TBSN[:4]
 
 TuenkersCAN_ID=["3042","3419"]
-TuenkersPROFI_ID=["3042","3419"]
+TuenkersPROFI_ID=["3212","3222","2455","3470"]
 if APP_MODE in(TuenkersCAN_ID):
     from UDP_p import UDP
     APP_MODE = "TuenkersCAN"
