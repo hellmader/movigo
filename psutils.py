@@ -43,6 +43,7 @@ def ueberwache_system():
     # Temperaturinformationen
     temperatur_info= int(rTemp("/sys/class/thermal/thermal_zone0/temp"))/1000
     system_info["Temperatur 8"] = temperatur_info
+    system_info["CPUTemp"] = temperatur_info
     
     # Netzwerkverbindungen
     #netzwerk_verbindungen = psutil.net_connections()
