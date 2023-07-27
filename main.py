@@ -240,6 +240,7 @@ if __name__ == '__main__':
                 Data.update({'APP_Mode': APP_Mode})
                 Data.update(ueberwache_system())
                 CPUTemp= ueberwache_system()["CPUTemp"]
+                print(CPUTemp)
                 #dataproc.printcodes()
                 if APP_Mode in("TuenkersCAN" ,"TuenkersPROFI"):
                     dataproc.Ladegeraet_present()
