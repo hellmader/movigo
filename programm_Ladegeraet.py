@@ -36,17 +36,17 @@ class Ladegeraet(threading.Thread):
         TuenkersPROFI_ID=["3042","3419"]
         TuenkersCAN_ID=["3212","3222","2455","3470"]
         if APP_Mode in(TuenkersPROFI_ID):
-            baudrate=250000
+            self.baudrate=250000
         elif APP_Mode in(TuenkersCAN_ID):
-            baudrate=500000
+            self.baudrate=500000
         
         self.readCANfromLadegeraet = None
-        self.readcan = can.interface.Bus(channel = 'can0', bustype = 'socketcan', bitrate=baudrate, can_filters = [{"can_id": 0x18FF50E5 , "can_mask": 0x1FFFFFFF, "extended": True}])
+        self.readcan = can.interface.Bus(channel = 'can0', bustype = 'socketcan', bitrate=aelf.baudrate, can_filters = [{"can_id": 0x18FF50E5 , "can_mask": 0x1FFFFFFF, "extended": True}])
         self.Spannung_Ladegeraet = 0
         self.Strom_Ladegeraet = 0
         self.Status_Ladegeraet = None
         
-        self.writecan = can.interface.Bus(channel = 'can0', bustype = 'socketcan', bitrate=baudrate)
+        self.writecan = can.interface.Bus(channel = 'can0', bustype = 'socketcan', bitrate=self.baudrate)
         self.Ladeschlussspannung = 54.6*10
         self.Ladestrom = 50*10 #500
         self.Regler = 0 #0: Charger start charging, 1: Battery protection Charger Stop Output, 2: Heating mode
@@ -155,8 +155,12 @@ class Ladegeraet(threading.Thread):
         msg = can.Message(data=data_Ladegeraet, arbitration_id=0X1806E5F4, is_extended_id=True)
        
         logging.info(msg)
-        self.writecan.send(msg)
-        
+        try:
+            self.writecan.send(msg)
+        except:
+            self.writecan.shutdown()
+            self.writecan = can.interface.Bus(channel = 'can0', bustype = 'socketcan', bitrate=self.baudrate)
+            pass
 
         
     def run(self):
