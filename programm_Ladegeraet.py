@@ -39,9 +39,12 @@ class Ladegeraet(threading.Thread):
             self.baudrate=250000
         elif APP_Mode in(TuenkersCAN_ID):
             self.baudrate=500000
+        else:
+            print('programm_ladegerät.py, Zeile 43: Keine gültige Seriennummer definiert, CAN-Baud:500000')
+            self.baudrate=500000
         
         self.readCANfromLadegeraet = None
-        self.readcan = can.interface.Bus(channel = 'can0', bustype = 'socketcan', bitrate=aelf.baudrate, can_filters = [{"can_id": 0x18FF50E5 , "can_mask": 0x1FFFFFFF, "extended": True}])
+        self.readcan = can.interface.Bus(channel = 'can0', bustype = 'socketcan', bitrate=self.baudrate, can_filters = [{"can_id": 0x18FF50E5 , "can_mask": 0x1FFFFFFF, "extended": True}])
         self.Spannung_Ladegeraet = 0
         self.Strom_Ladegeraet = 0
         self.Status_Ladegeraet = None
