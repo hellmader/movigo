@@ -64,7 +64,7 @@ class Ladegeraet(threading.Thread):
         msg = self.readcan.recv(2)
         #logging.info(msg)
         
-        if msg is None:
+        if msg is None or (str(hex(msg.arbitration_id))!="0x18ff50e5"):
             self.none_count += 1
             if self.none_count >= 5:
                 self.time_last_msg = time.time()
