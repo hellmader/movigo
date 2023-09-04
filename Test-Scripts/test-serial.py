@@ -35,7 +35,7 @@ basicBMS = b'\xdd\xa5\x03\x00\xff\x77\xfdw'
 
 basicBMS = bytearray([0xdd, 0xa5,0x03,0x00,0xff,0x77,0xfd])
 
-basicBMS = bytes.fromhex('dd a5 03 00 ff 77 fd')
+basicBMS = bytes.fromhex('dd a5 03 00 ff fd 77')
 print("BMS:data", basicBMS)
 
 
