@@ -4,7 +4,6 @@
 # V1.0
 ########################################################################
 
-
 import time
 import threading
 import enum
@@ -13,12 +12,15 @@ from clHelper import checkTime
 import pandas as pd
 import time, sys
 from datetime import datetime
+import csv
+import os
+import queue
+from collections import deque
 
 class Request(enum.Enum):
     NONE = 0
     BASIC_INFO = 1
     CELL_VOLTAGE = 2
-
 
 def current_milli_time():
     return round(time.time() * 1000)
@@ -29,116 +31,108 @@ class write_csv (threading.Thread):
         self.debugOutput = debugOutput
         self.updateCycle = updateCycle
         self.write_to_csv = write_to_csv
-        self.hour = datetime.now().strftime("%H:%M:%S")[:2]
-        self.path1_pkl =r'/home/hell/logging_csv/data1_' + self.hour + '.csv'
-        self.path2_pkl =r'/home/hell/logging_csv/data2_' + self.hour + '.csv'
+        self.running = True
+        self.max_file_size = 10 * 1024 *2 *1000  # 10 MB
+        self.max_files = 100  # 10MB*100 files => 1GB max in directory /home/hell/sw/bms/logging/csv/
+        self.current_file_index = self.get_newest_file_index() + 1
+        self.files_queue = deque()  # Initialize an empty queue
+        self.fill_files_queue()  # Fill up the queue with existing indices
+        self.create_new_file()
 
         
-        data = {'Spannung': 0.0, 'Strom': 0.0, 'SoC': 0, 'Temperatur 1': -273.15, 'Temperatur 2': -273.15, 'Temperatur 3': -273.15, 'Temperatur 4': -273.15, 'Temperatur 5': -273.15, 'Temperatur 6': -273.15, 'Temperatur 7': -273.15, 'Temperatur 8': '62916\n'}#, 'maximale Zellspannung': 5.0, 'Position maximale Zellspannung': 0, 'minimale Zellspannung': 0.0, 'Position minimale Zellspannung': 0, 'Isolationswiderstand Gehäuse gegen PLUS': 38, 'Isolationswiderstand Gehäuse gegen MINUS': 38, 'spezifischer Isolationswiderstand Gehäuse gegen PLUS': 50, 'spezifischer Isolationswiderstand Gehäuse gegen MINUS': 50, 'Protection Status': 0, 'Balance Status': 0, 'Anzahl der Seriell-Verbindungen': 0, 'maximal erlaubte Zellspannung': 4.25, 'minimal erlaubte Zellspannung': 2.7, 'maximal erlaubte Batteriespannung': 0.0, 'minimal erlaubte Batteriespannung': 0.0, 'maximaler Entladestrom': 100, 'maximaler Ladestrom': 100, 'Minimale Temperatur Laden': 5, 'Maximale Temperatur Laden': 60, 'Minimale Temperatur Entladen': 0, 'Maximale Temperatur Entladen': 65, 'Fehlerauslösezeit': 5, 'nominelle Spannung': 0.0, 'nominelle Kapazität': 0.0, 'nominelle Energie': 0.0, 'Ladeschlussspannung': 0.0, 'Ladestrom': 0, 'StatusA': 1, 'StatusB': 4, 'WarningA': 3, 'WarningB': 6, 'ErrorA': 0, 'ErrorB': 0, 'Status_AUX1': 1, 'Request_AUX2': 0, 'Request_AUX3': 0, 'Request_AUX4': 0, 'Request_P': 0, 'Request_C': 0, 'Request_sleep': 0, 'TBSN': 'Teststation1', 'Akkuname': 'Teststation1', 'SerienNummer': 'Teststation1', 'Zeit': '18.03.2023 17:01:24', 'CPUTemp': '62916\n', '0x1A8': 0, 'time 0x1A8': 4.031507968902588, '0x2A8': 0, 'time 0x2A8': 4.031519651412964, '0x3A8': 0, 'time 0x3A8': 4.031525373458862, '0x4A8': 0, 'time 0x4A8': 4.031532287597656, '0x228': 0, 'time 0x228': 4.031538724899292, '0x18FF50E5': '0x18000000', 'time 0x18ff50e5': 0.09571433067321777, '0x1806E5F4': 0, 'time 0x1806E5F4': 4.031560659408569, 'Durchlaufzeit': 0.24444842338562012}
+    
+    def fill_files_queue(self):
+        existing_indices = set()
+        for filename in os.listdir('/home/hell/sw/bms/logging/csv/'):
+            if filename.startswith('data') and filename.endswith('.csv'):
+                try:
+                    index = int(filename[4:-4])  # Extract the index from the filename
+                    existing_indices.add(index)
+                except ValueError:
+                    pass  # Ignore filenames that don't match the expected format
+        for index in existing_indices:
+            self.files_queue.append(index)
 
-        
-        df = pd.DataFrame.from_dict(data.items())
-        df = df.T # or df1.transpose()
-        df.rename(columns=df.iloc[0], inplace = True)
-        df.drop([0], inplace = True)
-        df_new = df
-        
-        
-        try: 
-            df_new_1 = pd.read_csv(self.path1_pkl)#, compression='zip')
-            print(df_new_1)
-        except:
-            df_new_1= pd.DataFrame()
-            print('Problem 1')
-        try:
-            df_new_2 = pd.read_csv(self.path2_pkl)#, compression='zip')
-            print(df_new_2)
-        except:
-            df_new_2= pd.DataFrame()
-            print('Problem 2')
-        if len(df_new_1)>= len(df_new_2):
-            self.df_new = df_new_1
-        else:
-            self.df_new = df_new_2
-        #print('000000000000000000000000000000000000000')
-        #print(df_new)
-        self.start_test_time = time.time()
+    
+    def get_newest_file_index(self):
+        existing_indices = set()
+        for filename in os.listdir('/home/hell/sw/bms/logging/csv/'):
+            if filename.startswith('data') and filename.endswith('.csv'):
+                try:
+                    index = int(filename[4:-4])  # Extract the index from the filename
+                    existing_indices.add(index)
+                except ValueError:
+                    pass  # Ignore filenames that don't match the expected format
+        if existing_indices:
+            return max(existing_indices)
+        return 0
+
+
+
+    def create_new_file(self):
+          num_existing_files = sum(1 for filename in os.listdir('/home/hell/sw/bms/logging/csv/') if filename.startswith('data') and filename.endswith('.csv'))
+          
+          while num_existing_files >= self.max_files:
+              oldest_index = self.files_queue.popleft()
+              self.delete_oldest_file(oldest_index)
+              num_existing_files -= 1
+              
+          while self.current_file_index in self.files_queue:
+              self.current_file_index += 1
+              if self.current_file_index > self.max_files:
+                  self.current_file_index = 1
+              
+          self.file_size = 0
+          self.current_file = open(f'/home/hell/sw/bms/logging/csv/data{self.current_file_index}.csv', 'w', newline='')
+          self.files_queue.append(self.current_file_index)
+      
+          
+    def delete_oldest_file(self, index):
+        oldest_filename = f'/home/hell/sw/bms/logging/csv/data{index}.csv'
+        if os.path.exists(oldest_filename):
+            os.remove(oldest_filename)
+
+    
+
+    
 
 
     def write(self, data):
-        #print (data)
-       
-        
-        
-        df = pd.DataFrame.from_dict(data.items())
-        df = df.T # or df1.transpose()
-        df.rename(columns=df.iloc[0], inplace = True)
-        df.drop([0], inplace = True)
-        #print('Hallllllllllllllllllllloooooooooooooooooo')
-        #print(list(df.columns))
-        
-        #print(df['Zeit'])
-        #print(str(df['Zeit'])[16:18])
-        Stunden_Zeit = str(df['Zeit'])[16:18]
-        self.path1_pkl =r'/home/hell/logging_csv/data1_' + Stunden_Zeit + '.csv'
-        self.path2_pkl =r'/home/hell/logging_csv/data2_' + Stunden_Zeit + '.csv'
-        
-        if Stunden_Zeit != self.hour:
-            self.df_new = df
-            self.df_new.to_csv(self.path1_pkl)#, compression='zip')
-            self.df_new.to_csv(self.path2_pkl)#, compression='zip')     
-        else:
-            #self.df_new = pd.concat([self.df_new, df], ignore_index=True, sort=False)
-            df.to_csv(self.path1_pkl,mode='a',header=False, index=False)#, compression='zip')
-            df.to_csv(self.path2_pkl,mode='a',header=False, index=False)#, compression='zip')    
-        self.hour = str(df['Zeit'])[16:18]
-        #print(self.hour)
-        
-       
-        
-        
-        
+        if self.file_size + self.current_file.tell() >= self.max_file_size:
+            self.current_file.close()
+            self.current_file_index += 1
+            self.create_new_file()
 
-        
-        
-        
-        #print('5555555555555555555555555555555555555555')
-        
-        #print('Zeit Datensicherung', self.start_test_time - time.time())
-        self.start_test_time = time.time()
-        Zahl = 0
-        
-        #print(len(self.df_new))
 
-            
-              
-        
+        writer = csv.DictWriter(self.current_file, fieldnames=data.keys(), delimiter=';')
+        if self.file_size == 0:
+            writer.writeheader()
+        writer.writerow(data)
+        self.file_size = self.current_file.tell()
 
-        
+    def stop(self):
+        self.running = False
+
     def run(self):
         if self.debugOutput:
             print("can: Run - Start Thread")
-        incData = []
-        self.running = True
 
-        t1 = checkTime() 
-
-
-        while(self.running):
-            time.sleep(.01)   #wichtig sonst 100% cpu auslastung
-            #check for incoming data from main thread
+        while self.running:
             try:
-                qDataIn = self.write_to_csv.get_nowait()
+                qDataIn = self.write_to_csv.get(timeout=1)
                 self.write(qDataIn)
-                
-                #time.sleep(1)
-            except:
-                # do nothing
+            except queue.Empty:
                 pass
 
+        if self.current_file:
+            self.current_file.close()
+
         if self.debugOutput:
-                print("canO: Thread exit")
-                        
+            print("canO: Thread exit")
 
-
-
+# Create and start the thread
+# debugOutput = True
+# updateCycle = 100
+# write_to_csv = ...
+# thread = write_csv(debugOutput, updateCycle, write_to_csv)
+# thread.start()
