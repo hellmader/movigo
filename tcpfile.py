@@ -5,7 +5,7 @@ from collections import deque
 
 def start_tcpdump_subprocess(interface, output_filename):
     with open(output_filename, "a") as output_file:
-        command = ['tcpdump', '-i', interface, '-w', output_filename]
+        command = ['sudo','tcpdump', '-i', interface, '-w', output_filename]
         process = subprocess.Popen(command, stdout=output_file, stderr=subprocess.STDOUT)
         return process
 
