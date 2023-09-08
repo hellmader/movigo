@@ -238,6 +238,9 @@ if __name__ == '__main__':
                 Data.update(IO_Input)
                 
                 Data.update({'APP_Mode': APP_Mode})
+                for key, value in Data.items():
+                    if isinstance(value, (int, float)):
+                       Data[key] = str(value).replace('.', ',')
                 Data.update(ueberwache_system())
                 CPUTemp= ueberwache_system()["CPUTemp"]
                 #print(CPUTemp)
