@@ -20,7 +20,7 @@ def main():
     eth0_output_filename = os.path.join(eth0_log_directory, f"eth0_capture_{eth0_log_index}.pcap")
     eth0_files_queue = deque()
 
-    print("Starting initial tcpdump subprocess for eth0. Output will be saved to", eth0_output_filename)
+    #print("Starting initial tcpdump subprocess for eth0. Output will be saved to", eth0_output_filename)
     eth0_tcpdump_process = start_tcpdump_subprocess("eth0", eth0_output_filename)
 
     # TCP capture on lo with host 127.0.0.1
@@ -29,7 +29,7 @@ def main():
     lo_output_filename = os.path.join(lo_log_directory, f"lo_capture_{lo_log_index}.pcap")
     lo_files_queue = deque()
 
-    print("Starting initial tcpdump subprocess for lo. Output will be saved to", lo_output_filename)
+    #print("Starting initial tcpdump subprocess for lo. Output will be saved to", lo_output_filename)
     lo_tcpdump_process = start_tcpdump_subprocess("lo", lo_output_filename)
 
     # Initialize eth0 files queue with existing indices
@@ -55,10 +55,10 @@ def main():
             time.sleep(2)  # Check every 2 seconds
 
             eth0_file_size = os.path.getsize(eth0_output_filename)
-            print("Current eth0 file size:", eth0_file_size)
+            #print("Current eth0 file size:", eth0_file_size)
 
             if eth0_file_size > max_log_size:
-                print("Stopping current eth0 tcpdump subprocess.")
+                #print("Stopping current eth0 tcpdump subprocess.")
                 eth0_tcpdump_process.terminate()
                 eth0_tcpdump_process.wait()
 
@@ -70,14 +70,14 @@ def main():
                 eth0_output_filename = os.path.join(eth0_log_directory, f"eth0_capture_{eth0_log_index}.pcap")
                 eth0_files_queue.append(eth0_log_index)
 
-                print("Starting new eth0 tcpdump subprocess. Output will be saved to", eth0_output_filename)
+                #print("Starting new eth0 tcpdump subprocess. Output will be saved to", eth0_output_filename)
                 eth0_tcpdump_process = start_tcpdump_subprocess("eth0", eth0_output_filename)
 
             lo_file_size = os.path.getsize(lo_output_filename)
-            print("Current lo file size:", lo_file_size)
+            #print("Current lo file size:", lo_file_size)
 
             if lo_file_size > max_log_size:
-                print("Stopping current lo tcpdump subprocess.")
+                #print("Stopping current lo tcpdump subprocess.")
                 lo_tcpdump_process.terminate()
                 lo_tcpdump_process.wait()
 
@@ -89,7 +89,7 @@ def main():
                 lo_output_filename = os.path.join(lo_log_directory, f"lo_capture_{lo_log_index}.pcap")
                 lo_files_queue.append(lo_log_index)
 
-                print("Starting new lo tcpdump subprocess. Output will be saved to", lo_output_filename)
+                #print("Starting new lo tcpdump subprocess. Output will be saved to", lo_output_filename)
                 lo_tcpdump_process = start_tcpdump_subprocess("lo", lo_output_filename)
 
     except KeyboardInterrupt:
