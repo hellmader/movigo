@@ -6,9 +6,9 @@
 
 
 #from re import S
-tcpdump_logg=False
-csv_logg=False
-candump_logg=False
+#tcpdump_logg=False
+#csv_logg=False
+#candump_logg=False
 
 import pprint
 from clBMS import Request, smartBMS
@@ -23,17 +23,17 @@ from clIO import clIO
 import configparser
 import logging
 from clHelper import checkTime
-from clTBH import clTBH
+#from clTBH import clTBH
 import os
-from write_csv import write_csv
+#from write_csv import write_csv
 import psutil
 from psutils import ueberwache_system
 import os
 import requests
-import pandas as pd
+#import pandas as pd
 import time, sys
-import tcpfile
-import canfile
+#import tcpfile
+#import canfile
 from threading import Thread
 
 
@@ -41,9 +41,9 @@ config = configparser.ConfigParser()
 config.read("/home/hell/sw/etc/bms.config")
 
 #Logging aktivieren/deaktivieren
-if tcpdump_logg:
-    import subprocess
-    import signal
+#if tcpdump_logg:
+#    import subprocess
+#    import signal
 
 TBServer  = config['thingsboard']['Server']
 TBToken  = config['thingsboard']['Token']
@@ -79,11 +79,11 @@ toLadegeraet = Queue()
 toUDPQueue = Queue()
 fromUDPQueue = Queue()
 
-toTBHQueue = Queue()
+#toTBHQueue = Queue()
 
 qDatafromBMS = 0
 Data={}
-tocsv = Queue()
+#tocsv = Queue()
 cpu_max=0.0
 
 # read Rock Pi CPU Temperatur sensor
@@ -130,12 +130,12 @@ if __name__ == '__main__':
     UDP = UDP(0,1000,toUDPQueue, fromUDPQueue)
     UDP.start()
 
-    tb = clTBH(toTBHQueue, host=TBServer, token=TBToken, port=1883  )  # Thingsboard connection
-    tb.start()
+#    tb = clTBH(toTBHQueue, host=TBServer, token=TBToken, port=1883  )  # Thingsboard connection
+#    tb.start()
     
-    if csv_logg:
-        tc = write_csv(0,1000,tocsv)
-        tc.start()
+#    if csv_logg:
+#        tc = write_csv(0,1000,tocsv)
+#        tc.start()
     
     dataproc = dataprocessing()
     
@@ -155,13 +155,13 @@ if __name__ == '__main__':
     time_start = time.time()
     timecheck=time_start
     #tcpdump
-    if tcpdump_logg:
-       tcpfile_thread = Thread(target=tcpfile.main)
-       tcpfile_thread.start()
+#    if tcpdump_logg:
+#       tcpfile_thread = Thread(target=tcpfile.main)
+#       tcpfile_thread.start()
     #candump  
-    if candump_logg:
-       canfile_thread = Thread(target=canfile.main)
-       canfile_thread.start()
+#    if candump_logg:
+#       canfile_thread = Thread(target=canfile.main)
+#       canfile_thread.start()
     
     try:
         while(1):
@@ -258,10 +258,10 @@ if __name__ == '__main__':
                 lade.writeLadegeraet(Data)
                 Data.update({'Zeit': TimeStmp()  })
                 toLadegeraet.put(Data)
-                toTBHQueue.put(Data)
+#                toTBHQueue.put(Data)
                 #Daten an csv
-                if csv_logg:
-                    tocsv.put(Data)
+#                if csv_logg:
+#                    tocsv.put(Data)
                 toUDPQueue.put(Data)
                 
 
@@ -271,9 +271,9 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         toBmsQueue.put("SIG-INT")
         toLadegeraet.put("SIG-INT")
-        toTBHQueue.put("SIG-INT")
+#        toTBHQueue.put("SIG-INT")
         toUDPQueue.put("SIG-INT")
-        toTBHQueue.put("SIG-INT")
+#        toTBHQueue.put("SIG-INT")
         os.killpg(os.getpgid(process.pid),signal.SIGTERM)
         os.systemc('sudo systemctl stop profinet')
         
