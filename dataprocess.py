@@ -272,6 +272,7 @@ class dataprocessing():
             self.Flag_geladen = True
         if (self.Strom_Ladegeraet <5) and (self.Flag_geladen ==True):
             self.Status_B1_Ladevorgang_beendet = 1
+            self.Status_B0_Ladegerät_aktiv = 0
             
     
     def Status_laden_beendet(self):
