@@ -327,7 +327,7 @@ class dataprocessing():
         #Warning Bits
 
         #Warning_A0_Zell_max = 0
-        if self.max_cell_voltage > 4.150:
+        if self.max_cell_voltage > 4.20:
             self.Warning_A0_Zell_max = 1
         else:
             self.Warning_A0_Zell_max = 0
