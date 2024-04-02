@@ -14,8 +14,8 @@ import requests
 from clTBH import clTBH
 from write_csv import write_csv
 import tcpfile
-tcpdump_logg=True
-csv_logg=True
+tcpdump_logg=False
+csv_logg=False
 import subprocess
 import signal
 from clIO import clIO
