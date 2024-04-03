@@ -8,14 +8,9 @@ import threading
 from threading import Thread
 from multiprocessing import Queue
 import configparser
-import logging
 from psutils import ueberwache_system
 import requests
 from clTBH import clTBH
-from write_csv import write_csv
-import tcpfile
-tcpdump_logg=False
-csv_logg=False
 import subprocess
 import signal
 from datetime import datetime
@@ -41,7 +36,6 @@ tb = clTBH(toTBHQueue, host=TBServer, token=TBToken, port=1883  )  # Thingsboard
 tb.start()
 dataproc = dataprocessing()
 Data = {}
-tocsv = Queue()
 counter=0
 sock=None
 if csv_logg:
@@ -112,8 +106,6 @@ if __name__ == '__main__':
                     pass
                 
                 toTBHQueue.put(Data)
-                if csv_logg:
-                        tocsv.put(Data)
                     
            
             
