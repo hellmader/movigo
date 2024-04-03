@@ -38,12 +38,6 @@ dataproc = dataprocessing()
 Data = {}
 counter=0
 sock=None
-if csv_logg:
-        tc = write_csv(0,1000,tocsv)
-        tc.start()
-if tcpdump_logg:
-       tcpfile_thread = Thread(target=tcpfile.main)
-       tcpfile_thread.start()
 time.sleep(.1)
 updateTimeStart_dataprocessing = int(round(time.time() * 1000))
 def TimeStmp():
