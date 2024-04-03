@@ -18,7 +18,6 @@ tcpdump_logg=False
 csv_logg=False
 import subprocess
 import signal
-from clIO import clIO
 from datetime import datetime
 
 UDP_IP = "192.168.89.1"  # IP address of the receiving Rock Pi 
@@ -45,15 +44,12 @@ Data = {}
 tocsv = Queue()
 counter=0
 sock=None
-tb = clTBH(toTBHQueue, host=TBServer, token=TBToken, port=1883  )  # Thingsboard connection
-tb.start()
 if csv_logg:
         tc = write_csv(0,1000,tocsv)
         tc.start()
 if tcpdump_logg:
        tcpfile_thread = Thread(target=tcpfile.main)
        tcpfile_thread.start()
-io = clIO()
 time.sleep(.1)
 updateTimeStart_dataprocessing = int(round(time.time() * 1000))
 def TimeStmp():
@@ -82,10 +78,6 @@ if __name__ == '__main__':
             if (int(round(time.time() * 1000)) - updateTimeStart_dataprocessing) >250:
                 counter+=1
                 IO_Input = dataproc.getRequests()
-                IO_Output = io.StatusIOs()
-                dataproc.calculateStatusCodes(IO_Output)
-                statusA = dataproc.getStatusA()
-                statusB = dataproc.getStatusB()
                 dataproc.calculateWarningCodes()
                 warningA = dataproc.getWarningA()
                 warningB = dataproc.getWarningB()
@@ -96,7 +88,7 @@ if __name__ == '__main__':
         
                 dataproc.shutdown_code()
                 Data = dataproc.getBMSdata()
-                Data.update({'StatusA': statusA, 'StatusB': statusB, 'WarningA': warningA,  'WarningB': warningB, 'ErrorA':errorA, 'ErrorB':errorB})
+                Data.update({'WarningA': warningA,  'WarningB': warningB, 'ErrorA':errorA, 'ErrorB':errorB})
                 Data.update(IO_Input)
                 Data.update(ueberwache_system())
                 Data.update({'Zeit': TimeStmp()})
