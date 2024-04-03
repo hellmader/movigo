@@ -33,7 +33,7 @@ class clTBH(threading.Thread):
     def run(self):
         self.running = True
 
-        self.client =  TBDeviceMqttClient( self.host, self.token, self.port )
+        self.client =  TBDeviceMqttClient( self.host, self.port, self.token )
         
         while(self.running):
             time.sleep(.01)   #wichtig sonst 100% cpu auslastung
