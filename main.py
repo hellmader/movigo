@@ -37,6 +37,7 @@ tb.start()
 dataproc = dataprocessing()
 Data = {}
 counter=0
+counterthb=0
 sock=None
 time.sleep(.1)
 updateTimeStart_dataprocessing = int(round(time.time() * 1000))
@@ -92,14 +93,18 @@ if __name__ == '__main__':
                 if counter==9:
                   try:
                     counter=0
+                    counterthb+=1
                     if sock==None:
                        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
                     message_to_send = json.dumps(DataUDP).encode()  # convert the dictionary to a JSON string and then to bytes
                     sock.sendto(message_to_send, (UDP_IP, UDP_PORT))
+                    if counterthb==4:
+                       counterthb=0
+                       toTBHQueue.put(Data)
                   except:
                     pass
                 
-                toTBHQueue.put(Data)
+                
                     
            
             
