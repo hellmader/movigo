@@ -98,7 +98,7 @@ if __name__ == '__main__':
                        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
                     message_to_send = json.dumps(DataUDP).encode()  # convert the dictionary to a JSON string and then to bytes
                     sock.sendto(message_to_send, (UDP_IP, UDP_PORT))
-                    if counterthb==4:
+                    if counterthb==5:
                        counterthb=0
                        toTBHQueue.put(Data)
                   except:
