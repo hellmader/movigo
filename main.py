@@ -36,7 +36,6 @@ tb = clTBH(toTBHQueue, host=TBServer, token=TBToken, port=1883  )  # Thingsboard
 tb.start()
 dataproc = dataprocessing()
 Data = {}
-counter=0
 counterthb=0
 sock=None
 time.sleep(.1)
