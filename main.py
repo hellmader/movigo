@@ -20,20 +20,16 @@ UDP_PORT = 5005
 threads = []
 config = configparser.ConfigParser()
 config.read("/home/hell/sw/etc/bms.config")
-TBServer  = config['thingsboard']['Server']
-TBToken  = config['thingsboard']['Token']
-TBAkku  = config['thingsboard']['Akku']
-TBSN  = config['thingsboard']['Seriennummer']
+
 counter = 0
 toBmsQueue = Queue()
 fromBmsQueue = Queue()
-toTBHQueue = Queue()
+
 threads = []
 
 bms = smartBMS(0,1000, toBmsQueue, fromBmsQueue)
 bms.start()
-tb = clTBH(toTBHQueue, host=TBServer, token=TBToken, port=1883  )  # Thingsboard connection
-tb.start()
+
 dataproc = dataprocessing()
 Data = {}
 counterthb=0
@@ -92,14 +88,10 @@ if __name__ == '__main__':
                 if counter==9:
                   try:
                     counter=0
-                    counterthb+=1
                     if sock==None:
                        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
                     message_to_send = json.dumps(DataUDP).encode()  # convert the dictionary to a JSON string and then to bytes
                     sock.sendto(message_to_send, (UDP_IP, UDP_PORT))
-                    if counterthb==5:
-                       counterthb=0
-                       toTBHQueue.put(Data)
                   except:
                     pass
                 
