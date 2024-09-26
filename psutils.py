@@ -24,8 +24,8 @@ def ueberwache_system():
     system_info = {}
 
     # CPU-Auslastung
-    cpu_prozent = psutil.cpu_percent()
-    system_info["CPU-Auslastung"] = f"{cpu_prozent}%"
+    #cpu_prozent = psutil.cpu_percent()
+    #system_info["CPU-Auslastung"] = f"{cpu_prozent}%"
     
     # Speicherauslastung
     virtueller_speicher = psutil.virtual_memory().percent

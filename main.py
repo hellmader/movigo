@@ -74,7 +74,7 @@ if __name__ == '__main__':
                 Data = dataproc.getBMSdata()
                 Data.update({'WarningA': warningA,  'WarningB': warningB, 'ErrorA':errorA, 'ErrorB':errorB})
                 Data.update(IO_Input)
-                Data.update(ueberwache_system())
+                #Data.update(ueberwache_system())
                 Data.update({'Zeit': TimeStmp()})
                 DataUDP=({'Voltage': Data['Spannung']})
                 DataUDP.update({'Current': Data['Strom']})
