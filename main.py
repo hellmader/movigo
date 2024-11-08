@@ -14,6 +14,8 @@ from clTBH import clTBH
 import subprocess
 import signal
 from datetime import datetime
+from clHelper import checkTime
+
 
 UDP_IP = "192.168.89.1"  # IP address of the receiving Rock Pi 
 UDP_PORT = 5005
@@ -41,8 +43,26 @@ def TimeStmp():
   Zeit = datetime.now()
   dt_string = Zeit.strftime("%d.%m.%Y %H:%M:%S")
   return(dt_string)
+
+# read Rock Pi CPU Temperatur sensor
+temp_base ="/sys/class/thermal/thermal_zone0/temp"
+
+def rTemp(tempsensor):
+  try:
+    f = open(tempsensor,'r')
+    tempvalue=f.readline()
+    f.close
+  except:
+    tempvalue=0
+  
+  #print("CPUTemp:", tempvalue)
+
+  return(tempvalue)
+  
 if __name__ == '__main__':    
     try:
+        t2 = checkTime()
+        CPUTemp= rTemp(temp_base)
         while True:
             time.sleep(0.1)
             try:
@@ -59,6 +79,11 @@ if __name__ == '__main__':
     
             except: 
              pass
+
+            #Temperatur sensor Rock PI E auslesen
+            if( t2.getTime(60000) ):
+                CPUTemp= rTemp(temp_base)
+              
             if (int(round(time.time() * 1000)) - updateTimeStart_dataprocessing) >250:
                 counter+=1
                 IO_Input = dataproc.getRequests()
@@ -82,6 +107,7 @@ if __name__ == '__main__':
                 DataUDP.update({'Temp1': Data['Temperatur 1']})
                 DataUDP.update({'Temp2': Data['Temperatur 2']})
                 DataUDP.update({'Temp3': Data['Temperatur 3']})
+                DataUDP.update({'CPUTemp': CPUTemp})
                 DataUDP.update({'min CellVoltage': Data['minimale Zellspannung']})
                 DataUDP.update({'max CellVoltage': Data['maximale Zellspannung']})
                 DataUDP.update({'Time': Data['Zeit']})
