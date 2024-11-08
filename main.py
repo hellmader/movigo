@@ -39,26 +39,24 @@ sock=None
 time.sleep(.1)
 updateTimeStart_dataprocessing = int(round(time.time() * 1000))
 def TimeStmp():
-  #date and time
-  Zeit = datetime.now()
-  dt_string = Zeit.strftime("%d.%m.%Y %H:%M:%S")
-  return(dt_string)
+    #date and time
+    Zeit = datetime.now()
+    dt_string = Zeit.strftime("%d.%m.%Y %H:%M:%S")
+    return(dt_string)
 
 # read Rock Pi CPU Temperatur sensor
 temp_base ="/sys/class/thermal/thermal_zone0/temp"
 
 def rTemp(tempsensor):
-  try:
-    f = open(tempsensor,'r')
-    tempvalue=f.readline()
-    f.close
-  except:
-    tempvalue=0
-  
-  #print("CPUTemp:", tempvalue)
+    try:
+        f = open(tempsensor,'r')
+        tempvalue=f.readline()
+        f.close
+    except:
+        tempvalue=0
+    #print("CPUTemp:", tempvalue)
+    return(tempvalue)
 
-  return(tempvalue)
-  
 if __name__ == '__main__':    
     try:
         t2 = checkTime()
@@ -72,18 +70,18 @@ if __name__ == '__main__':
                     dataproc.updateBMS(qDatafromBMS)
                     qDatafromBMS_prev = qDatafromBMS
                 else:
-                        if time.time() - time_stamp >= 5:
-                            dataproc.calculateStatusCodes(IO_Output,1)
-                            
-                        dataproc.updateBMS(qDatafromBMS_prev)
-    
-            except: 
-             pass
+                    if time.time() - time_stamp >= 5:
+                        dataproc.calculateStatusCodes(IO_Output,1)
 
-            #Temperatur sensor Rock PI E auslesen
+                    dataproc.updateBMS(qDatafromBMS_prev)
+
+            except: 
+                pass
+
+                #Temperatur sensor Rock PI E auslesen
             if( t2.getTime(60000) ):
                 CPUTemp= rTemp(temp_base)
-              
+
             if (int(round(time.time() * 1000)) - updateTimeStart_dataprocessing) >250:
                 counter+=1
                 IO_Input = dataproc.getRequests()
@@ -93,8 +91,8 @@ if __name__ == '__main__':
                 dataproc.calculateErrorCodes()
                 errorA = dataproc.getErrorA()
                 errorB = dataproc.getErrorB()
-                
-        
+
+
                 dataproc.shutdown_code()
                 Data = dataproc.getBMSdata()
                 Data.update({'WarningA': warningA,  'WarningB': warningB, 'ErrorA':errorA, 'ErrorB':errorB})
@@ -112,26 +110,26 @@ if __name__ == '__main__':
                 DataUDP.update({'max CellVoltage': Data['maximale Zellspannung']})
                 DataUDP.update({'Time': Data['Zeit']})
                 if counter==9:
-                  try:
-                    counter=0
-                    if sock==None:
-                       sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
-                    message_to_send = json.dumps(DataUDP).encode()  # convert the dictionary to a JSON string and then to bytes
-                    sock.sendto(message_to_send, (UDP_IP, UDP_PORT))
-                  except:
-                    pass
-                
-                
-                    
-           
-            
-           
+                    try:
+                        counter=0
+                        if sock==None:
+                            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+                            message_to_send = json.dumps(DataUDP).encode()  # convert the dictionary to a JSON string and then to bytes
+                            sock.sendto(message_to_send, (UDP_IP, UDP_PORT))
+                    except:
+                        pass
+
+
+
+
+
+
     except KeyboardInterrupt:
-                toBmsQueue.put("SIG-INT")  
-                toTBHQueue.put("SIG-INT")
-                bms.join()
-                os.killpg(os.getpgid(process.pid),signal.SIGTERM)
-                os.systemc('sudo systemctl stop profinet')
-                bms.join()
-                tb.join()        
-                print("threads successfully closed")
+        toBmsQueue.put("SIG-INT")  
+        toTBHQueue.put("SIG-INT")
+        bms.join()
+        os.killpg(os.getpgid(process.pid),signal.SIGTERM)
+        os.systemc('sudo systemctl stop profinet')
+        bms.join()
+        tb.join()        
+        print("threads successfully closed")
