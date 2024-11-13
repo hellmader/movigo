@@ -55,7 +55,7 @@ def rTemp(tempsensor):
     except:
         tempvalue=0
     #print("CPUTemp:", tempvalue)
-    return(tempvalue)
+    return(round(int(tempvalue)/1000,1))
 
 if __name__ == '__main__':    
     try:
