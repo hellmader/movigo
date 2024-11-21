@@ -114,8 +114,8 @@ if __name__ == '__main__':
                         counter=0
                         if sock==None:
                             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
-                            message_to_send = json.dumps(DataUDP).encode()  # convert the dictionary to a JSON string and then to bytes
-                            sock.sendto(message_to_send, (UDP_IP, UDP_PORT))
+                        message_to_send = json.dumps(DataUDP).encode()  # convert the dictionary to a JSON string and then to bytes
+                        sock.sendto(message_to_send, (UDP_IP, UDP_PORT))
                     except:
                         pass
 
