@@ -82,8 +82,8 @@ if __name__ == '__main__':
             if( t2.getTime(60000) ):
                 CPUTemp= rTemp(temp_base)
 
-            if (int(round(time.time() * 1000)) - updateTimeStart_dataprocessing) >250:
-                counter+=1
+            if (int(round(time.time() * 1000)) - updateTimeStart_dataprocessing) >1000:
+                updateTimeStart_dataprocessing = int(round(time.time() * 1000))
                 IO_Input = dataproc.getRequests()
                 dataproc.calculateWarningCodes()
                 warningA = dataproc.getWarningA()
@@ -109,15 +109,13 @@ if __name__ == '__main__':
                 DataUDP.update({'min CellVoltage': Data['minimale Zellspannung']})
                 DataUDP.update({'max CellVoltage': Data['maximale Zellspannung']})
                 DataUDP.update({'Time': Data['Zeit']})
-                if counter==9:
-                    try:
-                        counter=0
-                        if sock==None:
-                            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
-                        message_to_send = json.dumps(DataUDP).encode()  # convert the dictionary to a JSON string and then to bytes
-                        sock.sendto(message_to_send, (UDP_IP, UDP_PORT))
-                    except:
-                        pass
+                try:
+                    if sock==None:
+                        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
+                    message_to_send = json.dumps(DataUDP).encode()  # convert the dictionary to a JSON string and then to bytes
+                    sock.sendto(message_to_send, (UDP_IP, UDP_PORT))
+                except:
+                    pass
 
 
 
