@@ -17,7 +17,7 @@ from datetime import datetime
 from clHelper import checkTime
 import csv
 import statistics  # To calculate mean values
-UDP_IP = "192.168.10.112"  # IP address of the receiving Rock Pi 
+UDP_IP = "192.168.89.1"  # IP address of the receiving Rock Pi 
 UDP_PORT = 5005
 threads = []
 config = configparser.ConfigParser()
