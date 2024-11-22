@@ -8,7 +8,7 @@ import threading
 from threading import Thread
 from multiprocessing import Queue
 import configparser
-from psutils import ueberwache_system
+#from psutils import ueberwache_system
 import requests
 from clTBH import clTBH
 import subprocess
