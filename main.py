@@ -174,8 +174,8 @@ if __name__ == '__main__':
                     DataUDP.update({'Temp3': Data['Temperatur 3']})
                     DataUDP.update({'CPUTemp': CPUTemp})
 
-                    #DataUDP.update({'min CellVoltage': Data['minimale Zellspannung']})
-                    #DataUDP.update({'max CellVoltage': Data['maximale Zellspannung']})
+                    DataUDP.update({'min CellVoltage': Data['minimale Zellspannung']})
+                    DataUDP.update({'max CellVoltage': Data['maximale Zellspannung']})
                     
                     min_cell_voltage = Data['minimale Zellspannung']
                     max_cell_voltage = Data['maximale Zellspannung']
@@ -187,7 +187,7 @@ if __name__ == '__main__':
                     
                     current = Data['Strom']
                     # Update Data and DataUDP with the mean values
-                    DataUDP.update({'Mean Min Cell Voltage': min_cell_mean, 'Mean Max Cell Voltage': max_cell_mean})
+                    #DataUDP.update({'Mean Min Cell Voltage': min_cell_mean, 'Mean Max Cell Voltage': max_cell_mean})
                     try:
                         if current < 0:  # Discharging
                             #print("mincellstat")
