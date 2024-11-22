@@ -17,7 +17,11 @@ from datetime import datetime
 from clHelper import checkTime
 import csv
 import statistics  # To calculate mean values
+<<<<<<< HEAD
 UDP_IP = "192.168.10.123"  # IP address of the receiving Rock Pi 
+=======
+UDP_IP = "192.168.89.1"  # IP address of the receiving Rock Pi 
+>>>>>>> f2bae8633bbde73ae8d512407a4a9fabae3763da
 UDP_PORT = 5005
 threads = []
 config = configparser.ConfigParser()
@@ -77,9 +81,15 @@ try:
                 print(f"Missing data in row: {row}, Error: {e}")
             except ValueError as e:
                 print(f"Invalid data in row: {row}, Error: {e}")
+<<<<<<< HEAD
     #print(f"SoC array: {soc}")
     #print(f"min_cell array: {min_cell}")
     #print(f"max_cell array: {max_cell}")
+=======
+    print(f"SoC array: {soc}")
+    print(f"min_cell array: {min_cell}")
+    print(f"max_cell array: {max_cell}")
+>>>>>>> f2bae8633bbde73ae8d512407a4a9fabae3763da
 except Exception as e:
     print(f"Error reading CSV file: {e}")
 
@@ -167,14 +177,24 @@ if __name__ == '__main__':
                     Data.update({'Zeit': TimeStmp()})
                     DataUDP=({'Voltage': Data['Spannung']})
                     DataUDP.update({'Current': Data['Strom']})
+<<<<<<< HEAD
                     DataUDP.update({'SoC': Data['SoC']})
+=======
+                    #DataUDP.update({'SoC': Data['SoC']})
+>>>>>>> f2bae8633bbde73ae8d512407a4a9fabae3763da
                     DataUDP.update({'Temp1': Data['Temperatur 1']})
                     DataUDP.update({'Temp2': Data['Temperatur 2']})
                     DataUDP.update({'Temp3': Data['Temperatur 3']})
                     DataUDP.update({'CPUTemp': CPUTemp})
+<<<<<<< HEAD
                     DataUDP.update({'min CellVoltage': Data['minimale Zellspannung']})
                     DataUDP.update({'max CellVoltage': Data['maximale Zellspannung']})
                     DataUDP.update({'Time': Data['Zeit']})
+=======
+                    #DataUDP.update({'min CellVoltage': Data['minimale Zellspannung']})
+                    #DataUDP.update({'max CellVoltage': Data['maximale Zellspannung']})
+ 
+>>>>>>> f2bae8633bbde73ae8d512407a4a9fabae3763da
                     
                     min_cell_voltage = Data['minimale Zellspannung']
                     max_cell_voltage = Data['maximale Zellspannung']
@@ -199,8 +219,13 @@ if __name__ == '__main__':
                         new_soc = round(calculate_mean(soc_array), 0)
                         # Update SoC in Data
                         #Data['SoC'] = new_soc
+<<<<<<< HEAD
                         DataUDP.update({'New SoC': new_soc})  # Update in UDP data as well
     
+=======
+                        DataUDP.update({'SoC': new_soc})  # Update in UDP data as well
+                        DataUDP.update({'Time': Data['Zeit']})
+>>>>>>> f2bae8633bbde73ae8d512407a4a9fabae3763da
                     except ValueError as e:
                         print(f"Error in SoC calculation: {e}")
                         Data['SoC'] = None  # Fallback if calculation fails
@@ -210,7 +235,10 @@ if __name__ == '__main__':
                             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # UDP
                         message_to_send = json.dumps(DataUDP).encode()  # convert the dictionary to a JSON string and then to bytes
                         sock.sendto(message_to_send, (UDP_IP, UDP_PORT))
+<<<<<<< HEAD
                         print(DataUDP)
+=======
+>>>>>>> f2bae8633bbde73ae8d512407a4a9fabae3763da
                     except:
                     
                         pass
