@@ -354,7 +354,7 @@ class smartBMS(threading.Thread):
             try:
                 ret = self.serialBMS.read(200)      #read 200byte, serial timeout 0.2sec
                 #if ret:
-                #    print("Serial Return:", ret)
+                    #print("Serial Return:", ret)
                     
                 #incData = []
                 if ret:
@@ -370,9 +370,7 @@ class smartBMS(threading.Thread):
                     #print("smartBMS: incData = {}".format(incData) )
                     
                     if incData[0] == 0xDD:
-                        
                         shortData = incData[2:(len(incData)-3)]
-                        #print(shortData)
                         checksum = self.calcIncChecksum(shortData)
                         #if checksum == (int.from_bytes(incData[len(incData)-3], "little")*256 + int.from_bytes(incData[len(incData)-2], "little")):
                         #print(checksum, (incData[len(incData)-3]*256 + incData[len(incData)-2]))
