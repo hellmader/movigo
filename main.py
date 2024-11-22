@@ -197,7 +197,7 @@ if __name__ == '__main__':
                             new_soc = get_soc(max_cell_mean, max_cell, soc, mode='next_highest')
                         #print(new_soc)   
                         add_to_limited_array(soc_array, new_soc)
-                        new_soc = round(calculate_mean(soc_array), 0)
+                        new_soc = int(round(calculate_mean(soc_array), 0))
                         # Update SoC in Data
                         DataUDP.update({'SoC': new_soc})  # Update in UDP data as well
                         DataUDP.update({'Time': Data['Zeit']})
